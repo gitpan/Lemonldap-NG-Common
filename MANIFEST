@@ -1,0 +1,24 @@
+Changes
+lib/Lemonldap/NG/Common.pm
+lib/Lemonldap/NG/Common/Apache/Session.pm
+lib/Lemonldap/NG/Common/Apache/Session/SOAP.pm
+lib/Lemonldap/NG/Common/CGI.pm
+lib/Lemonldap/NG/Common/Conf.pm
+lib/Lemonldap/NG/Common/Conf/Constants.pm
+lib/Lemonldap/NG/Common/Conf/DBI.pm
+lib/Lemonldap/NG/Common/Conf/File.pm
+lib/Lemonldap/NG/Common/Conf/SOAP.pm
+Makefile.PL
+MANIFEST
+META.yml			Module meta-data (added by MakeMaker)
+README
+scripts/lmConfig_File2MySQL
+storage.conf
+t/01-Manager-Conf.t
+t/02-Manager-Conf-File.t
+t/03-Manager-Conf-DBI.t
+t/04-Manager-Conf-SOAP.t
+t/10-Common.t
+t/99-pod.t
+tools/apache-session-mysql.sql
+tools/lmConfig.mysql

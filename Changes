@@ -1,0 +1,6 @@
+Revision history for Perl extension Lemonldap::NG::Common.
+
+0.9  Mon Nov 17 16:34:56 2008
+	- New package including the old Lemonldap::NG::manager::Conf and CGI
+	  common functions
+
