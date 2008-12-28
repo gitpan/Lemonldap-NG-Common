@@ -13,7 +13,7 @@ use MIME::Base64;
 use Time::Local;
 use CGI;
 
-our $VERSION = '0.3';
+our $VERSION = '0.31';
 
 use base qw(CGI);
 

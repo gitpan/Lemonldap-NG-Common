@@ -15,8 +15,6 @@ our %_confFiles;
 
 sub new {
     my $class = shift;
-    my $args;
-    $args ||= {};
     my $self = bless {}, $class;
     if ( ref( $_[0] ) ) {
         %$self = %{ $_[0] };
@@ -25,7 +23,7 @@ sub new {
         %$self = @_;
     }
     unless ( $self->{mdone} ) {
-        $self->_readConfFile( $self->{confFile} );
+        $self->_readConfFile( $self->{confFile} ) unless ( $self->{type} );
         unless ( $self->{type} ) {
             $msg .= "Error: configStorage: type is not defined\n";
             return 0;

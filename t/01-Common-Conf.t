@@ -5,7 +5,7 @@
 
 # change 'tests => 1' to 'tests => last_test_to_print';
 
-use Test::More tests => 2;
+use Test::More tests => 3;
 BEGIN { use_ok('Lemonldap::NG::Common::Conf') }
 
 #########################
@@ -14,12 +14,17 @@ BEGIN { use_ok('Lemonldap::NG::Common::Conf') }
 # its man page ( perldoc Test::More ) for help writing this test script.
 
 my $h;
-@ARGV = ("help=groups");
+
 ok(
-    $h = new Lemonldap::NG::Common::Conf(
-    {
-	    type    => 'File',
-	    dirName => ".",
-	}
-    )
+    (
+        Lemonldap::NG::Common::Conf->new( type => 'bad' ) == 0
+          and $Lemonldap::NG::Common::Conf::msg =~
+          /Error: Unknown package Lemonldap::NG::Common::Conf::bad$/
+    ),
+    'Bad module'
 );
+
+$h = bless {}, 'Lemonldap::NG::Common::Conf';
+
+ok( $h->_readConfFile('storage.conf'), 'Read storage.conf' );
+

@@ -1,5 +1,8 @@
 Revision history for Perl extension Lemonldap::NG::Common.
 
+0.91 Sun Dec 26 10:06:42 2008
+	- Add SOAP::Lite dependency
+
 0.9  Mon Nov 17 16:34:56 2008
 	- New package including the old Lemonldap::NG::manager::Conf and CGI
 	  common functions

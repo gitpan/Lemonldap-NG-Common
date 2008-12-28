@@ -14,10 +14,10 @@ META.yml			Module meta-data (added by MakeMaker)
 README
 scripts/lmConfig_File2MySQL
 storage.conf
-t/01-Manager-Conf.t
-t/02-Manager-Conf-File.t
-t/03-Manager-Conf-DBI.t
-t/04-Manager-Conf-SOAP.t
+t/01-Common-Conf.t
+t/02-Common-Conf-File.t
+t/03-Common-Conf-DBI.t
+t/04-Common-Conf-SOAP.t
 t/10-Common.t
 t/99-pod.t
 tools/apache-session-mysql.sql
