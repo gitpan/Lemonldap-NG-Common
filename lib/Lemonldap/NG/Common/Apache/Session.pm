@@ -1,3 +1,10 @@
+## @file
+# Add get_key_from_all_sessions() function to Apache::Session modules.
+# This file is used by Lemonldap::NG::Manager::Status and by the
+# purgeCentralCache script.
+#
+# Warning, this works only with SQL databases, simple or Berkeley files (not
+# for Apache::Session::Memcached for example)
 package Lemonldap::NG::Common::Apache::Session;
 
 use Storable qw(thaw);

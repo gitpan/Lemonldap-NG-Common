@@ -3,6 +3,8 @@ lib/Lemonldap/NG/Common.pm
 lib/Lemonldap/NG/Common/Apache/Session.pm
 lib/Lemonldap/NG/Common/Apache/Session/SOAP.pm
 lib/Lemonldap/NG/Common/CGI.pm
+lib/Lemonldap/NG/Common/CGI/SOAPServer.pm
+lib/Lemonldap/NG/Common/CGI/SOAPService.pm
 lib/Lemonldap/NG/Common/Conf.pm
 lib/Lemonldap/NG/Common/Conf/Constants.pm
 lib/Lemonldap/NG/Common/Conf/DBI.pm
@@ -19,6 +21,7 @@ t/02-Common-Conf-File.t
 t/03-Common-Conf-DBI.t
 t/04-Common-Conf-SOAP.t
 t/10-Common.t
+t/20-Common-CGI.t
 t/99-pod.t
 tools/apache-session-mysql.sql
 tools/lmConfig.mysql

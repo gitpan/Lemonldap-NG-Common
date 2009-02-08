@@ -1,3 +1,10 @@
+##@file
+# Base package for Lemonldap::NG configuration system
+
+##@class
+# Implements Lemonldap::NG shared configuration system.
+# In case of error or warning, the message is stored in the global variable
+# $Lemonldap::NG::Common::Conf::msg
 package Lemonldap::NG::Common::Conf;
 
 use strict;
@@ -13,6 +20,21 @@ our $msg;
 
 our %_confFiles;
 
+## @cmethod Lemonldap::NG::Common::Conf new(hashRef arg)
+# Constructor.
+# Succeed if it has found a way to access to Lemonldap::NG configuration with
+# $arg (or default file). It can be :
+# - Nothing: default configuration file is tested, 
+# - { File => "/path/to/storage.conf" },
+# - { Type => "File", dirName => "/path/to/conf/dir/" },
+# - { Type => "DBI", dbiChain => "DBI:mysql:database=lemonldap-ng;host=1.2.3.4",
+# dbiUser => "user", dbiPassword => "password" },
+# - { Type => "SOAP", proxy => "https://manager.example.com/soapmanager.pl" },
+#
+# $self->{type} contains the type of configuration access system and the
+# corresponding package is loaded.
+# @param $arg hash reference or hash table
+# @return New Lemonldap::NG::Common::Conf object
 sub new {
     my $class = shift;
     my $self = bless {}, $class;
@@ -52,6 +74,10 @@ sub new {
     return $self;
 }
 
+## @method private boolean _readConfFile(string file)
+# Read $file to know how to access to Lemonldap::NG configuration.
+# @param $file Optional file name (default: /etc/lemonldap-ng/storage.conf)
+# @return True if the file was successfuly read
 sub _readConfFile {
     my $self = shift;
     my $file = shift || DEFAULTCONFFILE;
@@ -81,6 +107,10 @@ sub _readConfFile {
     return 1;
 }
 
+## @method int saveConf(hashRef conf)
+# Serialize $conf and call store().
+# @param $conf Lemonldap::NG configuration hashRef
+# @return Number of the saved configuration, 0 if case of error.
 sub saveConf {
     my ( $self, $conf ) = @_;
 
@@ -115,6 +145,14 @@ sub saveConf {
     return $self->store($fields);
 }
 
+## @method hashRef getConf(hashRef args)
+# Get configuration from remote configuration storage system or from local
+# cache if configuration has not been changed. If $args->{local} is set and if
+# a local configuration is available, remote configuration is not tested.
+#
+# Uses lastCfg to test and getDBConf() to get the remote configuration
+# @param $args Optional, contains {local=>1} or nothing
+# @return Lemonldap::NG configuration
 sub getConf {
     my ( $self, $args ) = @_;
     if (    $args->{'local'}
@@ -139,11 +177,20 @@ sub getConf {
     }
 }
 
+## @method void setLocalConf(hashRef conf)
+# Store $conf in the local cache.
+# @param $conf Lemonldap::NG configuration hashRef
 sub setLocalConf {
     my ( $self, $conf ) = @_;
     $self->{refLocalStorage}->set( "conf", $conf );
 }
 
+## @method hashRef getDBConf(hashRef args)
+# Get configuration from remote storage system.
+# @param $args hashRef that must contains a key "cfgNum" (number of the wanted
+# configuration) and optionaly a key "fields" that points to an array of wanted
+# configuration keys
+# @return Lemonldap::NG configuration hashRef
 sub getDBConf {
     my ( $self, $args ) = @_;
     return undef unless $args->{cfgNum};
@@ -198,38 +245,67 @@ sub getDBConf {
     return $conf;
 }
 
+## @method boolean prereq()
+# Call prereq() from the $self->{type} package.
+# @return True if succeed
 sub prereq {
     return &{ $_[0]->{type} . '::prereq' }(@_);
 }
 
+## @method @ available()
+# Call available() from the $self->{type} package.
+# @return list of available configuration numbers
 sub available {
     return &{ $_[0]->{type} . '::available' }(@_);
 }
 
+## @method int lastCfg()
+# Call lastCfg() from the $self->{type} package.
+# @return Number of the last configuration available
 sub lastCfg {
     return &{ $_[0]->{type} . '::lastCfg' }(@_);
 }
 
+## @method boolean lock()
+# Call lock() from the $self->{type} package.
+# @return True if succeed
 sub lock {
     return &{ $_[0]->{type} . '::lock' }(@_);
 }
 
+## @method boolean isLocked()
+# Call isLocked() from the $self->{type} package.
+# @return True if database is locked
 sub isLocked {
     return &{ $_[0]->{type} . '::isLocked' }(@_);
 }
 
+## @method boolean unlock()
+# Call unlock() from the $self->{type} package.
+# @return True if succeed
 sub unlock {
     return &{ $_[0]->{type} . '::unlock' }(@_);
 }
 
+## @method int store(hashRef conf)
+# Call store() from the $self->{type} package.
+# @param $conf Lemondlap configuration serialized
+# @return Number of new configuration stored if succeed, 0 else.
 sub store {
     return &{ $_[0]->{type} . '::store' }(@_);
 }
 
+## @method load(int cfgNum, arrayRef fields)
+# Call load() from the $self->{type} package.
+# @return Lemonldap::NG Configuration hashRef if succeed, 0 else.
 sub load {
     return &{ $_[0]->{type} . '::load' }(@_);
 }
 
+## @method boolean delete(int cfgNum)
+# Call delete() from the $self->{type} package.
+# @param $cfgNum Number of configuration to delete
+# @return True if succeed
 sub delete {
     my ( $self, $c ) = @_;
     my @a = $self->available();

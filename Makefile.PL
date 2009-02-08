@@ -29,7 +29,7 @@ WriteMakefile(
 	'Cache::Cache'     => 0,
         'SOAP::Lite'       => 0,
     },                                               # e.g., Module::Name => 1.1
-    EXE_FILES => [ 'scripts/lmConfig_File2MySQL', ],
+    #EXE_FILES => [ 'scripts/lmConfig_File2MySQL', ],
     (
         $] >= 5.005
         ?    ## Add these new keywords supported since 5.005

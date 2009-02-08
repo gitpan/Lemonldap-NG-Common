@@ -1,3 +1,8 @@
+## @file
+# Client side of the SOAP proxy mechanism for Apache::Session modules
+
+## @class
+# Client side of the SOAP proxy mechanism for Apache::Session modules
 package Lemonldap::NG::Common::Apache::Session::SOAP;
 
 use strict;
@@ -16,6 +21,9 @@ BEGIN {
 
 # PUBLIC INTERFACE
 
+## @cmethod Lemonldap::NG::Common::Apache::Session::SOAP TIEHASH(string session_id, hashRef args)
+# Constructor for Perl TIE mechanism. See perltie(3) for more.
+# @return Lemonldap::NG::Common::Apache::Session::SOAP object
 sub TIEHASH {
     my $class = shift;
 
@@ -100,8 +108,8 @@ sub DESTROY {
     $self->save;
 }
 
-# INTERNAL SUBROUTINES
-
+## @method private SOAP::Lite _connect()
+# @return The SOAP::Lite object. Build it at the first call.
 sub _connect {
     my $self = shift;
     return $self->{service} if ( $self->{service} );
@@ -113,29 +121,43 @@ sub _connect {
     return $self->{service} = SOAP::Lite->ns( $self->{ns} )->proxy(@args);
 }
 
+## @method private $ _soapCall(string func, @args)
+# @param $func remote function to call
+# @param @args Functions parameters
+# @return Result
 sub _soapCall {
     my $self = shift;
     my $func = shift;
     return $self->_connect->$func(@_)->result;
 }
 
+## @method hashRef get(string id)
+# @param $id Apache::Session session ID.
+# @return User datas
 sub get {
     my $self = shift;
     my $id   = shift;
     return $self->{data} = $self->_soapCall( "get", $id );
 }
 
+## @method hashRef newsession()
+# Build a new Apache::Session session.
+# @return User datas (just the session ID)
 sub newsession {
     my $self = shift;
     return $self->{data} = $self->_soapCall( "newsession" );
 }
 
+## @method boolean save()
+# Save user datas if modified.
 sub save {
     my $self = shift;
     return unless ($self->{modified});
     return $self->_soapCall( "set", $self->{data}->{_session_id}, $self->{data} );
 }
 
+## @method boolean delete()
+# Deletes the current session.
 sub delete {
     my $self = shift;
     return $self->_soapCall( "delete", $self->{data}->{_session_id} );
