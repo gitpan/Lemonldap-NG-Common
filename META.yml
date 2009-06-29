@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Lemonldap-NG-Common
-version:             0.93
+version:             0.94
 abstract:            Common files for Lemonldap::NG infrastructure
 license:             ~
 author:              
