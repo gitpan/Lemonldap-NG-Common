@@ -17,13 +17,13 @@ my $h;
 @ARGV = ("help=groups");
 ok(
     $h = new Lemonldap::NG::Common::Conf(
-    {
-	    type     => 'DBI',
-	    dbiChain => "DBI:mysql:database=lemonldap-ng",
-	    dbiUser  => 'lemonldap-ng',
-	}
+        {
+            type     => 'DBI',
+            dbiChain => "DBI:mysql:database=lemonldap-ng",
+            dbiUser  => 'lemonldap-ng',
+        }
     )
 );
 
-ok( $h->can( 'dbh' ) ); 
+ok( $h->can('dbh') );
 

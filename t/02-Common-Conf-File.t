@@ -17,10 +17,10 @@ my $h;
 
 ok(
     $h = new Lemonldap::NG::Common::Conf(
-    {
-	    type    => 'File',
-	    dirName => ".",
-	}
+        {
+            type    => 'File',
+            dirName => ".",
+        }
     ),
     'type => file',
 );

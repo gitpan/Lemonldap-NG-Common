@@ -11,27 +11,132 @@ use MIME::Base64;
 use Time::Local;
 use CGI;
 
-our $VERSION = '0.4';
+#parameter syslog Indicates syslog facility for logging user actions
+
+our $VERSION = '0.5';
 
 use base qw(CGI);
 
-## @method void soapTest(string soapFunctions object obj)
+BEGIN {
+    if ( exists $ENV{MOD_PERL} ) {
+        if ( $ENV{MOD_PERL_API_VERSION} and $ENV{MOD_PERL_API_VERSION} >= 2 ) {
+            eval 'use constant MP => 2;';
+        }
+        else {
+            eval 'use constant MP => 1;';
+        }
+    }
+    else {
+        eval 'use constant MP => 0;';
+    }
+}
+
+## @cmethod Lemonldap::NG::Common::CGI new(@p)
+# Constructor: launch CGI::new() then secure parameters since CGI store them at
+# the root of the object.
+# @param p arguments for CGI::new()
+# @return new Lemonldap::NG::Common::CGI object
+sub new {
+    my $class = shift;
+    my $self  = CGI->new(@_);
+    $self->{_prm} = {};
+    my @tmp = $self->param();
+    foreach (@tmp) {
+        $self->{_prm}->{$_} = $self->param($_);
+        $self->delete($_);
+    }
+    bless $self, $class;
+    return $self;
+}
+
+## @method scalar param(string s, scalar newValue)
+# Return the wanted parameter issued of GET or POST request. If $s is not set,
+# return the list of parameters names
+# @param $s name of the parameter
+# @param $newValue if set, the parameter will be set to his value
+# @return datas passed by GET or POST method
+sub param {
+    my ( $self, $p, $v ) = @_;
+    $self->{_prm}->{$p} = $v if ($v);
+    unless ( defined $p ) {
+        return keys %{ $self->{_prm} };
+    }
+    return $self->{_prm}->{$p};
+}
+
+## @method scalar rparam(string s)
+# Return a reference to a parameter
+# @param $s name of the parameter
+# @return ref to parameter data
+sub rparam {
+    my ( $self, $p ) = @_;
+    return $self->{_prm}->{$p} ? \$self->{_prm}->{$p} : undef;
+}
+
+## @method void lmLog(string mess, string level)
+# Log subroutine. Use Apache::Log in ModPerl::Registry context else simply
+# print on STDERR non debug messages.
+# @param $mess Text to log
+# @param $level Level (debug|info|notice|error)
+sub lmLog {
+    my ( $self, $mess, $level ) = @_;
+    $mess = ( ref($self) ? ref($self) : $self ) . ": $mess"
+      if ( $level eq 'debug' );
+    if ( $self->r and MP() ) {
+        $self->abort( "Level is required",
+            'the parameter "level" is required when lmLog() is used' )
+          unless ($level);
+        if ( MP() == 2 ) {
+            require Apache2::Log;
+            Apache2::ServerRec->log->$level($mess);
+        }
+        else {
+            Apache->server->log->$level($mess);
+        }
+    }
+    else {
+        print STDERR "$mess\n" unless ( $level =~ /^(?:debug|info)$/ );
+    }
+}
+
+## @method void setApacheUser(string user)
+# Set user for Apache logs in ModPerl::Registry context. Does nothing else.
+# @param $user data to set as user in Apache logs
+sub setApacheUser {
+    my ( $self, $user ) = @_;
+    if ( $self->r and MP() ) {
+        $self->lmLog( "Inform Apache about the user connected", 'debug' );
+        if ( MP() == 2 ) {
+            require Apache2::Connection;
+            $self->r->user($user);
+        }
+        else {
+            $self->r->connection->user($user);
+        }
+    }
+}
+
+## @method void soapTest(string soapFunctions, object obj)
 # Check if request is a SOAP request. If it is, launch
 # Lemonldap::NG::Common::CGI::SOAPServer and exit. Else simply return.
 # @param $soapFunctions list of authorized functions.
 # @param $obj optional object that will receive SOAP requests
 sub soapTest {
-    my($self, $soapFunctions, $obj) = @_;
+    my ( $self, $soapFunctions, $obj ) = @_;
 
     # If non form encoded datas are posted, we call SOAP Services
     if ( $ENV{HTTP_SOAPACTION} ) {
-        require Lemonldap::NG::Common::CGI::SOAPServer; #link protected dispatcher
-        require Lemonldap::NG::Common::CGI::SOAPService; #link protected soapService
-        my @func = ( ref($soapFunctions) ? @$soapFunctions : split /\s+/, $soapFunctions );
-        my $dispatcher = Lemonldap::NG::Common::CGI::SOAPService->new($obj||$self,@func);
+        require Lemonldap::NG::Common::CGI::SOAPServer;    #link protected dispatcher
+        require Lemonldap::NG::Common::CGI::SOAPService;   #link protected soapService
+        my @func = (
+            ref($soapFunctions) ? @$soapFunctions : split /\s+/,
+            $soapFunctions
+        );
+        my $dispatcher =
+          Lemonldap::NG::Common::CGI::SOAPService->new( $obj || $self, @func );
         Lemonldap::NG::Common::CGI::SOAPServer->dispatch_to($dispatcher)
           ->handle($self);
-        exit;
+        $self->quit();
     }
 }
 
@@ -95,19 +200,96 @@ sub header_public {
 # @param text Optional text. Default: "See Apache's logs"
 sub abort {
     my $self = shift;
-    my $cgi  = CGI->new;
+    my $cgi  = CGI->new();
     my ( $t1, $t2 ) = @_;
     $t2 ||= "See Apache's logs";
-    print $cgi->header(
-        -type    => 'text/html; charset=utf8',
-    );
+    print $cgi->header( -type => 'text/html; charset=utf8', );
     print $cgi->start_html(
         -title    => $t1,
         -encoding => 'utf8',
     );
     print "<h1>$t1</h1>";
     print "<p>$t2</p>";
-    print STDERR ( ref($self)|| $self ) . " error: $t1, $t2\n";
+    print STDERR ( ref($self) || $self ) . " error: $t1, $t2\n";
+    exit;
+}
+
+##@method private void startSyslog()
+# Open syslog connection.
+sub startSyslog {
+    my $self = shift;
+    return if ( $self->{_syslog} );
+    eval {
+        use Sys::Syslog;
+        openlog( 'lemonldap-ng', 'ndelay', '$self->{syslog}' );
+    };
+    $self->abort( "Unable to use syslog", $@ ) if ($@);
+    $self->{_syslog} = 1;
+}
+
+##@method void userLog(string mess, string level)
+# Log user actions on Apache logs or syslog.
+# @param $mess string to log
+# @param $level level of log message
+sub userLog {
+    my ( $self, $mess, $level ) = @_;
+    if ( $self->{syslog} ) {
+        $self->startSyslog();
+        syslog( 'notice', $mess );
+    }
+    else {
+        $self->lmLog( $mess, $level );
+    }
+}
+
+##@method void userInfo(string mess)
+# Log non important user actions. Alias for userLog() with facility "info".
+# @param $mess string to log
+sub userInfo {
+    my ( $self, $mess ) = @_;
+    $mess = "Lemonldap::NG portal: $mess ($ENV{REMOTE_ADDR})";
+    $self->userLog( $mess, 'info' );
+}
+
+##@method void userNotice(string mess)
+# Log user actions like access and logout. Alias for userLog() with facility
+# "warn".
+# @param $mess string to log
+sub userNotice {
+    my ( $self, $mess ) = @_;
+    $mess = "Lemonldap::NG portal: $mess ($ENV{REMOTE_ADDR})";
+    $self->userLog( $mess, 'notice' );
+}
+
+##@method void userError(string mess)
+# Log user errors like "bad password". Alias for userLog() with facility
+# "error".
+# @param $mess string to log
+sub userError {
+    my ( $self, $mess ) = @_;
+    $mess = "Lemonldap::NG portal: $mess ($ENV{REMOTE_ADDR})";
+    $self->userLog( $mess, 'warn' );
+}
+
+## @method protected scalar _sub(string sub, array p)
+# Launch $self->{$sub} if defined, else launch $self->$sub.
+# @param $sub name of the sub to launch
+# @param @p parameters for the sub
+sub _sub {
+    my ( $self, $sub, @p ) = @_;
+    if ( $self->{$sub} ) {
+        $self->lmLog( "processing to custom sub $sub", 'debug' );
+        return &{ $self->{$sub} }( $self, @p );
+    }
+    else {
+        $self->lmLog( "processing to sub $sub", 'debug' );
+        return $self->$sub(@p);
+    }
+}
+
+## @method private void quit()
+# Simply exit.
+sub quit {
     exit;
 }
 

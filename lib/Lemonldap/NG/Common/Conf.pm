@@ -10,12 +10,18 @@ package Lemonldap::NG::Common::Conf;
 use strict;
 no strict 'refs';
 use Data::Dumper;
-use Lemonldap::NG::Common::Conf::Constants;
+use Lemonldap::NG::Common::Conf::Constants; #inherits
+use Lemonldap::NG::Common::Crypto; #link protected cipher Object "cypher" in configuration hash
 use Regexp::Assemble;
+
+#inherits Lemonldap::NG::Common::Conf::File
+#inherits Lemonldap::NG::Common::Conf::DBI
+#inherits Lemonldap::NG::Common::Conf::SOAP
+#inherits Lemonldap::NG::Common::Conf::LDAP
 
 use constant DEFAULTCONFFILE => "/etc/lemonldap-ng/storage.conf";
 
-our $VERSION = 0.51;
+our $VERSION = 0.6;
 our $msg;
 
 our %_confFiles;
@@ -25,11 +31,13 @@ our %_confFiles;
 # Succeed if it has found a way to access to Lemonldap::NG configuration with
 # $arg (or default file). It can be :
 # - Nothing: default configuration file is tested, 
-# - { File => "/path/to/storage.conf" },
+# - { confFile => "/path/to/storage.conf" },
 # - { Type => "File", dirName => "/path/to/conf/dir/" },
 # - { Type => "DBI", dbiChain => "DBI:mysql:database=lemonldap-ng;host=1.2.3.4",
 # dbiUser => "user", dbiPassword => "password" },
-# - { Type => "SOAP", proxy => "https://manager.example.com/soapmanager.pl" },
+# - { Type => "SOAP", proxy => "https://auth.example.com/index.pl/config" },
+# - { Type => "LDAP", ldapServer => "ldap://localhost", ldapConfBranch => "ou=conf,ou=applications,dc=example,dc=com",
+#  ldapBindDN => "cn=manager,dc=example,dc=com", ldapBindPassword => "secret"},
 #
 # $self->{type} contains the type of configuration access system and the
 # corresponding package is loaded.
@@ -59,8 +67,8 @@ sub new {
         }
         return 0 unless $self->prereq;
         $self->{mdone}++;
+        $msg = "$self->{type} loaded";
     }
-    $msg = "$self->{type} loaded";
     if ( $self->{localStorage} and not defined( $self->{refLocalStorage} ) ) {
         eval "use $self->{localStorage};";
         if ($@) {
@@ -122,6 +130,7 @@ sub saveConf {
     local $Data::Dumper::Indent = 0;
     local $Data::Dumper::Varname = "data";
     while ( my ( $k, $v ) = each(%$conf) ) {
+        next if ( $k =~ /^(?:reVHosts|cipher)$/ );
         if ( ref($v) ) {
             $fields->{$k} = Dumper($v);
             $fields->{$k} =~ s/'/&#39;/g;
@@ -164,16 +173,40 @@ sub getConf {
     }
     else {
         $args->{cfgNum} ||= $self->lastCfg;
+        unless ( $args->{cfgNum} ) {
+            $msg = "No configuration available";
+            return 0;
+        }
+        my $r;
         unless ( ref( $self->{refLocalStorage} ) ) {
             $msg = "get remote configuration (localStorage unavailable)";
-            return $self->getDBConf($args);
+            $r   = $self->getDBConf($args);
         }
-        my $r = $self->{refLocalStorage}->get('conf');
+        else {
+            $r = $self->{refLocalStorage}->get('conf');
         if ( $r->{cfgNum} == $args->{cfgNum} ) {
             $msg = "configuration unchanged, get configuration from cache";
-            return $r;
         }
-        return $self->getDBConf($args);
+            else {
+                $r = $self->getDBConf($args);
+            }
+        }
+        if ( $args->{clean} ) {
+            delete $r->{reVHosts};
+        }
+        else {
+            eval {
+                $r->{cipher} = Lemonldap::NG::Common::Crypto->new(
+                    $r->{key} || 'lemonldap-ng-key',
+                    Crypt::Rijndael::MODE_CBC()
+                );
+            };
+            if ($@) {
+                $msg = "Bad key : $@";
+                return 0;
+            }
+        }
+        return $r;
     }
 }
 
@@ -201,18 +234,20 @@ sub getDBConf {
           ? ( $a[ $#a + $args->{cfgNum} ] )
           : $a[0];
     }
-    my $fields = $self->load( $args->{cfgNum}, $args->{fields} );
+    my $fields = $self->load( $args->{cfgNum} );
     my $conf;
     while ( my ( $k, $v ) = each(%$fields) ) {
         $v =~ s/^'(.*)'$/$1/s;
         if ( $k =~
 /^(?:exportedVars|locationRules|groups|exportedHeaders|macros|globalStorageOptions)$/
-          )
+            and $v ||= {}
+            and not ref($v) )
         {
-            if ( $v !~ /^\$/ ) {
+            $conf->{$k} = {};
+            if ( defined($v) and $v !~ /^\$/ ) {
                 print STDERR
 "Lemonldap::NG : Warning: configuration is in old format, you've to migrate !\n";
-                eval 'require Storable;require MIME::Base64;';
+                eval { require Storable; require MIME::Base64; };
                 if ($@) {
                     $msg = "Error : $@";
                     return 0;
@@ -241,7 +276,8 @@ sub getDBConf {
         $re->add($_);
     }
     $conf->{reVHosts} = $re->as_string;
-    $self->setLocalConf($conf) if ( $self->{refLocalStorage} );
+    $self->setLocalConf($conf)
+      if ( $self->{refLocalStorage} and not( $args->{noCache} ) );
     return $conf;
 }
 
@@ -378,16 +414,25 @@ choosen type. Examples:
   $confAccess = new Lemonldap::NG::Common::Conf(
                 {
                 type         => 'SOAP',
-                proxy        => 'https://manager.example.com/soapmanager.pl',
+                proxy        => 'http://auth.example.com/index.pl/config',
                 proxyOptions => {
                                 timeout => 5,
                                 },
                 });
 
-SOAP configuration access is a sort of proxy: the SOAP server that runs
-L<Lemonldap::NG::Manager::SOAPServer> is configured to use the real session
-storage type (DBI or File for example). See L<Lemonldap::NG::Conf::SOAP> for
-more.
+SOAP configuration access is a sort of proxy: the portal is configured to use
+the real session storage type (DBI or File for example). See HTML documentation
+for more.
+
+=item * B<LDAP>:
+  $confAccess = new Lemonldap::NG::Common::Conf(
+                {
+                type             => 'LDAP',
+                ldapServer       => 'ldap://localhost',
+                ldapConfBranch   => 'ou=conf,ou=applications,dc=example,dc=com',
+                ldapBindDN       => 'cn=manager,dc=example,dc=com",
+                ldapBindPassword => 'secret'
+                });
 
 =back
 

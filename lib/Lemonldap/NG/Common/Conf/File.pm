@@ -1,18 +1,20 @@
 package Lemonldap::NG::Common::Conf::File;
 
 use strict;
-use Lemonldap::NG::Common::Conf::Constants;
+use Lemonldap::NG::Common::Conf::Constants; #inherits
 
-our $VERSION = 0.22;
+our $VERSION = 0.23;
 
 sub prereq {
     my $self = shift;
     unless ( $self->{dirName} ) {
-        $Lemonldap::NG::Common::Conf::msg = '"dirName" is required in "File" configuration type !';
+        $Lemonldap::NG::Common::Conf::msg =
+          '"dirName" is required in "File" configuration type !';
         return 0;
     }
     unless ( -d $self->{dirName} ) {
-        $Lemonldap::NG::Common::Conf::msg = "Directory \"$self->{dirName}\" does not exist !";
+        $Lemonldap::NG::Common::Conf::msg =
+          "Directory \"$self->{dirName}\" does not exist !";
         return 0;
     }
     1;
@@ -35,12 +37,13 @@ sub lastCfg {
 
 sub lock {
     my $self = shift;
-    if( $self->isLocked ) {
+    if ( $self->isLocked ) {
         sleep 2;
-        return 0 if( $self->isLocked );
+        return 0 if ( $self->isLocked );
     }
-    unless( open F, ">".$self->{dirName} . "/lmConf.lock" ) {
-        $Lemonldap::NG::Common::Conf::msg = "Unable to lock (".$self->{dirName}."/lmConf.lock)\n";
+    unless ( open F, ">" . $self->{dirName} . "/lmConf.lock" ) {
+        $Lemonldap::NG::Common::Conf::msg =
+          "Unable to lock (" . $self->{dirName} . "/lmConf.lock)\n";
         return 0;
     }
     print F $$;
@@ -61,8 +64,10 @@ sub unlock {
 sub store {
     my ( $self, $fields ) = @_;
     my $mask = umask;
-    umask ( oct ( '0027' ) );
-    unless( open FILE, '>' . $self->{dirName} . "/lmConf-" . $fields->{cfgNum} ) {
+    umask( oct('0027') );
+    unless ( open FILE,
+        '>' . $self->{dirName} . "/lmConf-" . $fields->{cfgNum} )
+    {
         $Lemonldap::NG::Common::Conf::msg = "Open file failed: $!";
         $self->unlock;
         return UNKNOWN_ERROR;
@@ -71,7 +76,7 @@ sub store {
         print FILE "$k\n\t$v\n\n";
     }
     close FILE;
-    umask( $mask );
+    umask($mask);
     $self->unlock;
     return $fields->{cfgNum};
 }
@@ -98,7 +103,8 @@ sub load {
 
 sub delete {
     my ( $self, $cfgNum ) = @_;
-    unlink ( $self->{dirName} . "/lmConf-$cfgNum" );
+    unlink( $self->{dirName} . "/lmConf-$cfgNum" );
 }
 
+1;
 __END__

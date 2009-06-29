@@ -8,14 +8,21 @@ package Lemonldap::NG::Common::Apache::Session::SOAP;
 use strict;
 use SOAP::Lite;
 
-our $VERSION = 0.3;
+our $VERSION = 0.4;
+
+#parameter proxy Url of SOAP service
+#parameter proxyOptions SOAP::Lite options
+#parameter User Username
+#parameter Password Password
 
 # Variables shared with SOAP::Transport::HTTP::Client
 our ( $user, $password ) = ( '', '' );
 
 BEGIN {
+
     sub SOAP::Transport::HTTP::Client::get_basic_credentials {
-        return $Lemonldap::NG::Common::Apache::Session::SOAP::user => $Lemonldap::NG::Common::Apache::Session::SOAP::password;
+        return $Lemonldap::NG::Common::Apache::Session::SOAP::user =>
+          $Lemonldap::NG::Common::Apache::Session::SOAP::password;
     }
 }
 
@@ -36,19 +43,19 @@ sub TIEHASH {
         data     => { _session_id => $session_id },
         modified => 0,
     };
-    foreach (qw(proxy proxyOptions)) {
+    foreach (qw(proxy proxyOptions ns)) {
         $self->{$_} = $args->{$_};
     }
     ( $user, $password ) = ( $args->{User}, $args->{Password} );
     bless $self, $class;
 
-    if (defined $session_id  && $session_id) {
+    if ( defined $session_id && $session_id ) {
         die "unexistant session $session_id"
-          unless( $self->get( $session_id ) );
+          unless ( $self->get($session_id) );
     }
     else {
         die "unable to create session"
-          unless( $self->newsession());
+          unless ( $self->newSession() );
     }
     return $self;
 }
@@ -93,14 +100,14 @@ sub EXISTS {
 }
 
 sub FIRSTKEY {
-    my $self = shift;
-    my $reset = keys %{$self->{data}};
-    return each %{$self->{data}};
+    my $self  = shift;
+    my $reset = keys %{ $self->{data} };
+    return each %{ $self->{data} };
 }
 
 sub NEXTKEY {
     my $self = shift;
-    return each %{$self->{data}};
+    return each %{ $self->{data} };
 }
 
 sub DESTROY {
@@ -117,7 +124,7 @@ sub _connect {
     if ( $self->{proxyOptions} ) {
         push @args, %{ $self->{proxyOptions} };
     }
-    $self->{ns} ||= 'urn:/Lemonldap/NG/Manager/SOAPService/Sessions';
+    $self->{ns} ||= 'urn:Lemonldap/NG/Common/CGI/SOAPService';
     return $self->{service} = SOAP::Lite->ns( $self->{ns} )->proxy(@args);
 }
 
@@ -128,7 +135,12 @@ sub _connect {
 sub _soapCall {
     my $self = shift;
     my $func = shift;
-    return $self->_connect->$func(@_)->result;
+    my $r    = $self->_connect->$func(@_);
+    if ( $r->fault ) {
+        print STDERR "SOAP Error: " . $r->fault->{faultstring};
+        return ();
+    }
+    return $r->result;
 }
 
 ## @method hashRef get(string id)
@@ -137,30 +149,60 @@ sub _soapCall {
 sub get {
     my $self = shift;
     my $id   = shift;
-    return $self->{data} = $self->_soapCall( "get", $id );
+    my $r    = $self->_soapCall( "getAttributes", $id );
+    return 0 unless ( $r or $r->{error} );
+    return $self->{data} = $r->{attributes};
 }
 
-## @method hashRef newsession()
+## @method hashRef newSession()
 # Build a new Apache::Session session.
 # @return User datas (just the session ID)
-sub newsession {
+sub newSession {
     my $self = shift;
-    return $self->{data} = $self->_soapCall( "newsession" );
+    return $self->{data} = $self->_soapCall("newSession");
 }
 
 ## @method boolean save()
 # Save user datas if modified.
 sub save {
     my $self = shift;
-    return unless ($self->{modified});
-    return $self->_soapCall( "set", $self->{data}->{_session_id}, $self->{data} );
+    return unless ( $self->{modified} );
+    return $self->_soapCall( "setAttributes", $self->{data}->{_session_id},
+        $self->{data} );
 }
 
 ## @method boolean delete()
 # Deletes the current session.
 sub delete {
     my $self = shift;
-    return $self->_soapCall( "delete", $self->{data}->{_session_id} );
+    return $self->_soapCall( "deleteSession", $self->{data}->{_session_id} );
+}
+
+## @method get_key_from_all_sessions()
+# Not documented.
+sub get_key_from_all_sessions() {
+    my $class = shift;
+    my $args  = shift;
+    my $data  = shift;
+    my $self  = bless {}, $class;
+    foreach (qw(proxy proxyOptions ns)) {
+        $self->{$_} = $args->{$_};
+    }
+    die('proxy is required') unless ( $self->{proxy} );
+    ( $user, $password ) = ( $args->{User}, $args->{Password} );
+    if ( ref($data) eq 'CODE' ) {
+        my $r = $self->_soapCall( "get_key_from_all_sessions", $args );
+        my $res;
+        if ($r) {
+        foreach my $k ( keys %$r ) {
+            my $tmp = &$data( $r->{$k}, $k );
+            $res->{$k} = $tmp if ( defined($tmp) );
+        }
+    }
+    }
+    else {
+        return $self->_soapCall( "get_key_from_all_sessions", $args, $data );
+    }
 }
 
 1;
@@ -185,7 +227,7 @@ access to Lemonldap::NG Web-SSO sessions via SOAP.
   __PACKAGE__->init ({
          globalStorage => 'Lemonldap::NG::Common::Apache::Session::SOAP',
          globalStorageOptions => {
-                 proxy => 'http://manager/cgi-bin/soapserver.pl',
+                 proxy => 'http://auth.example.com/index.pl/sessions',
                  proxyOptions => {
                      timeout => 5,
                  },
@@ -202,7 +244,7 @@ access to Lemonldap::NG Web-SSO sessions via SOAP.
   my $portal = new Lemonldap::NG::Portal::SharedConf (
          globalStorage => 'Lemonldap::NG::Common::Apache::Session::SOAP',
          globalStorageOptions => {
-                 proxy => 'http://manager/cgi-bin/soapserver.pl',
+                 proxy => 'http://auth.example.com/index.pl/sessions',
                  proxyOptions => {
                      timeout => 5,
                  },
@@ -225,9 +267,9 @@ Lemonldap::NG Web-SSO configuration. It is used by L<Lemonldap::NG::Handler>,
 L<Lemonldap::NG::Portal> and L<Lemonldap::NG::Manager>.
 
 Lemonldap::NG::Common::Apache::Session::SOAP used with
-L<Lemonldap::NG::Manager::SOAPServer> provides the ability to acces to
-Lemonldap::NG sessions via SOAP: They act as a proxy to access to the real
-Apache::Session module (set as Lemonldap::NG::Manager::SOAPServer parameter).
+L<Lemonldap::NG::Portal> provides the ability to acces to
+Lemonldap::NG sessions via SOAP: the portal act as a proxy to access to the
+real Apache::Session module (see HTML documentation for more)
 
 =head2 SECURITY
 
@@ -256,7 +298,7 @@ C<>SOAP::Transport::HTTP::Client::get_basic_credentials>:
       },
       configStorage       => {
                 type  => 'SOAP',
-                proxy => 'http://manager.example.com/soapserver.pl',
+                proxy => 'http://auth.example.com/index.pl/sessions',
                 User     => 'http-user',
                 Password => 'pass',
       },
@@ -284,7 +326,7 @@ set environment variables.
       },
       configStorage       => {
                 type  => 'SOAP',
-                proxy => 'http://manager.example.com/soapserver.pl',
+                proxy => 'http://auth.example.com/index.pl/sessions',
       },
       https               => 1,
   } );
@@ -293,7 +335,6 @@ set environment variables.
 
 =head1 SEE ALSO
 
-L<Lemonldap::NG::Manager::SOAPServer>,
 L<Lemonldap::NG::Manager>, L<Lemonldap::NG::Common::Conf::SOAP>,
 L<Lemonldap::NG::Handler>, L<Lemonldap::NG::Portal>,
 http://wiki.lemonldap.objectweb.org/xwiki/bin/view/NG/Presentation
@@ -314,7 +355,7 @@ L<http://forge.objectweb.org/project/showfiles.php?group_id=274>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2007 by Xavier Guimard
+Copyright (C) 2007, 2008, 2009 by Xavier Guimard
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,

@@ -7,7 +7,10 @@
 # for Apache::Session::Memcached for example)
 package Lemonldap::NG::Common::Apache::Session;
 
+use strict;
 use Storable qw(thaw);
+
+our $VERSION = 0.2;
 
 BEGIN {
 
@@ -89,6 +92,7 @@ BEGIN {
         require Apache::Session::Serialize::PHP;
         my $class = shift;
         my $args  = shift;
+        my $data  = shift;
 
         my $directory = $args->{SavePath} || '/tmp';
         unless ( opendir DIR, $args->{SavePath} ) {
@@ -103,7 +107,9 @@ BEGIN {
             open F, "$args->{SavePath}/$f";
             my $row = join '', <F>;
             if ( ref($data) eq 'CODE' ) {
-                $res{$f} = &$data( Apache::Session::Serialize::PHP::unserialize($row), $f );
+                $res{$f} =
+                  &$data( Apache::Session::Serialize::PHP::unserialize($row),
+                    $f );
             }
             elsif ($data) {
                 $data = [$data] unless ( ref($data) );
@@ -120,6 +126,7 @@ BEGIN {
     sub Apache::Session::DB_File::get_key_from_all_sessions {
         my $class = shift;
         my $args  = shift;
+        my $data  = shift;
 
         if ( !tied %{ $class->{dbm} } ) {
             my $rv = tie %{ $class->{dbm} }, 'DB_File', $args->{FileName};
@@ -142,12 +149,45 @@ BEGIN {
                 $res{$k} = thaw( $class->{dbm}->{$k} );
             }
         }
+        return \%res;
+    }
+
+    sub Apache::Session::LDAP::get_key_from_all_sessions {
+        my $class = shift;
+        my $args  = shift;
+        my $data  = shift;
+
+        my $ldap = Apache::Session::LDAP::Store::ldap( { args => $args } );
+        my $msg = $ldap->search(
+            base   => $args->{ldapConfBase},
+            filter => '(objectClass=applicationProcess)',
+            scope  => 'base',
+            attrs  => [ 'cn', 'description' ],
+        );
+        Apache::Session::LDAP::Store->($msg) if ( $msg->code );
+        my %res;
+        foreach my $entry ( $msg->entries ) {
+            my ( $k, $v ) =
+              ( $entry->get_value('cn'), $entry->get_value('description') );
+            if ( ref($data) eq 'CODE' ) {
+                $res{$k} = &$data( thaw($v), $k );
+            }
+            elsif ($data) {
+                $data = [$data] unless ( ref($data) );
+                my $tmp = thaw($v);
+                $res{$k}->{$_} = $tmp->{$_} foreach (@$data);
+            }
+            else {
+                $res{$k} = thaw($v);
+            }
+        }
+        return \%res;
     }
 
     sub Apache::Session::Memcached::get_key_from_all_sessions {
 
         # TODO
-        die ('Apache::Session::Memcached is not supported by Lemonldap::NG');
+        die('Apache::Session::Memcached is not supported by Lemonldap::NG');
     }
 }
 

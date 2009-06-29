@@ -19,14 +19,14 @@ SKIP: {
     my $h;
     ok(
         $h = new Lemonldap::NG::Common::Conf(
-        {
-    	    type     => 'SOAP',
-            proxy    => 'http://localhost',
-    	}
+            {
+                type  => 'SOAP',
+                proxy => 'http://localhost',
+            }
         )
     );
-    ok( $h->can( '_connect' ) );
-    ok( $h->can( '_soapCall' ) );
+    ok( $h->can('_connect') );
+    ok( $h->can('_soapCall') );
 }
 
 #########################
