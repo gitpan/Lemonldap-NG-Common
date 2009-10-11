@@ -13,7 +13,7 @@ use CGI;
 
 #parameter syslog Indicates syslog facility for logging user actions
 
-our $VERSION = '0.5';
+our $VERSION = '0.51';
 
 use base qw(CGI);
 
@@ -221,7 +221,7 @@ sub startSyslog {
     return if ( $self->{_syslog} );
     eval {
         use Sys::Syslog;
-        openlog( 'lemonldap-ng', 'ndelay', '$self->{syslog}' );
+        openlog( 'lemonldap-ng', 'ndelay', $self->{syslog} );
     };
     $self->abort( "Unable to use syslog", $@ ) if ($@);
     $self->{_syslog} = 1;

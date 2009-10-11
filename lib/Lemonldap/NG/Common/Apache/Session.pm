@@ -10,7 +10,7 @@ package Lemonldap::NG::Common::Apache::Session;
 use strict;
 use Storable qw(thaw);
 
-our $VERSION = 0.2;
+our $VERSION = 0.21;
 
 BEGIN {
 
@@ -157,14 +157,14 @@ BEGIN {
         my $args  = shift;
         my $data  = shift;
 
-        my $ldap = Apache::Session::LDAP::Store::ldap( { args => $args } );
+        my $ldap = Apache::Session::Store::LDAP::ldap( { args => $args } );
         my $msg = $ldap->search(
             base   => $args->{ldapConfBase},
             filter => '(objectClass=applicationProcess)',
             scope  => 'base',
             attrs  => [ 'cn', 'description' ],
         );
-        Apache::Session::LDAP::Store->($msg) if ( $msg->code );
+        Apache::Session::Store::LDAP->logError($msg) if ( $msg->code );
         my %res;
         foreach my $entry ( $msg->entries ) {
             my ( $k, $v ) =

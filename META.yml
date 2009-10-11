@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:                Lemonldap-NG-Common
-version:             0.94
+version:             0.95
 abstract:            Common files for Lemonldap::NG infrastructure
 license:             ~
 author:              
@@ -12,6 +12,7 @@ requires:
     CGI:                           3.08
     Crypt::Rijndael:               0
     DBI:                           0
+    HTTP::Headers:                 0
     IO::String:                    0
     Regexp::Assemble:              0
     SOAP::Lite:                    0

@@ -30,6 +30,7 @@ WriteMakefile(
         'IO::String'       => 0,
         'SOAP::Lite'       => 0,
         'Crypt::Rijndael'  => 0,
+        'HTTP::Headers'    => 0,
     },                                               # e.g., Module::Name => 1.1
     #EXE_FILES => [ 'scripts/lmConfig_File2MySQL', ],
     (

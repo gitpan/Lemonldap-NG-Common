@@ -11,7 +11,7 @@ use Crypt::Rijndael;
 use MIME::Base64;
 use base qw(Crypt::Rijndael);
 
-our $VERSION = '0.1';
+our $VERSION = '0.2';
 
 our $msg;
 
@@ -30,9 +30,13 @@ sub new {
 # @param data datas to encrypt
 # @return encrypted datas in Base64 format
 sub encrypt {
-    my $self = shift;
+    my ( $self, $str ) = @_;
     my $tmp;
-    eval { $tmp = encode_base64( $self->SUPER::encrypt(@_), '' ); };
+    eval {
+        $tmp = encode_base64(
+            $self->SUPER::encrypt( $str . "\0" x ( 16 - length($str) % 16 ) ),
+            '' );
+    };
     if ($@) {
         $msg = "Crypt::Rijndael error : $@";
         return undef;
@@ -60,6 +64,10 @@ sub decrypt {
     }
     else {
         $msg = '';
+
+        # Obscure Perl re bug...
+        $tmp .="\0";
+        $tmp =~ s/\0*$//;
         return $tmp;
     }
 }
