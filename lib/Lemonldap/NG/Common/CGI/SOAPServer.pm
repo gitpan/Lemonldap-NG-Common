@@ -9,8 +9,9 @@
 package Lemonldap::NG::Common::CGI::SOAPServer;
 use SOAP::Transport::HTTP;
 use base qw(SOAP::Transport::HTTP::Server);
+use bytes;
 
-our $VERSION = '0.32';
+our $VERSION = '0.99';
 
 ## @method protected void DESTROY()
 # Call SOAP::Trace::objects().
@@ -39,7 +40,7 @@ sub handle {
     my $cgi  = shift;
 
     my $content = $cgi->param('POSTDATA');
-    my $length  = length($content);
+    my $length  = bytes::length($content);
 
     if ( !$length ) {
         $self->response( HTTP::Response->new(411) )    # LENGTH REQUIRED
@@ -77,6 +78,7 @@ sub handle {
         -Content_Length => $self->response->header('Content-Length'),
         -SOAPServer     => 'Lemonldap::NG CGI',
     );
+    binmode( STDOUT, ":bytes" );
     print $self->response->content;
 }
 
@@ -84,6 +86,8 @@ sub handle {
 __END__
 
 =head1 NAME
+
+=encoding utf8
 
 Lemonldap::NG::Common::CGI::SOAPServer - Extends L<SOAP::Lite> to be compatible
 with L<CGI>.

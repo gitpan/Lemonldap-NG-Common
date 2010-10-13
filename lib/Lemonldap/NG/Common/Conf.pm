@@ -9,28 +9,26 @@ package Lemonldap::NG::Common::Conf;
 
 use strict;
 no strict 'refs';
-use Data::Dumper;
-use Lemonldap::NG::Common::Conf::Constants; #inherits
-use Lemonldap::NG::Common::Crypto; #link protected cipher Object "cypher" in configuration hash
+use Lemonldap::NG::Common::Conf::Constants;    #inherits
+use Lemonldap::NG::Common::Crypto
+  ;    #link protected cipher Object "cypher" in configuration hash
 use Regexp::Assemble;
+use Config::IniFiles;
 
 #inherits Lemonldap::NG::Common::Conf::File
 #inherits Lemonldap::NG::Common::Conf::DBI
 #inherits Lemonldap::NG::Common::Conf::SOAP
 #inherits Lemonldap::NG::Common::Conf::LDAP
 
-use constant DEFAULTCONFFILE => "/etc/lemonldap-ng/storage.conf";
-
-our $VERSION = 0.6;
+our $VERSION = '0.99';
 our $msg;
-
-our %_confFiles;
+our $configFiles;
 
 ## @cmethod Lemonldap::NG::Common::Conf new(hashRef arg)
 # Constructor.
 # Succeed if it has found a way to access to Lemonldap::NG configuration with
 # $arg (or default file). It can be :
-# - Nothing: default configuration file is tested, 
+# - Nothing: default configuration file is tested,
 # - { confFile => "/path/to/storage.conf" },
 # - { Type => "File", dirName => "/path/to/conf/dir/" },
 # - { Type => "DBI", dbiChain => "DBI:mysql:database=lemonldap-ng;host=1.2.3.4",
@@ -50,29 +48,42 @@ sub new {
         %$self = %{ $_[0] };
     }
     else {
-        %$self = @_;
+        if ( defined @_ && $#_ % 2 == 1 ) {
+            %$self = @_;
+        }
     }
     unless ( $self->{mdone} ) {
-        $self->_readConfFile( $self->{confFile} ) unless ( $self->{type} );
         unless ( $self->{type} ) {
-            $msg .= "Error: configStorage: type is not defined\n";
+
+            # Use local conf to get configStorage and localStorage
+            my $localconf =
+              $self->getLocalConf( CONFSECTION, $self->{confFile}, 0 );
+            if ( defined $localconf ) {
+                %$self = ( %$self, %$localconf );
+            }
+        }
+        unless ( $self->{type} ) {
+            $msg .= ' Error: configStorage: type is not defined.';
             return 0;
+        }
+        unless ( $self->{type} =~ /^[\w:]+$/ ) {
+            $msg .= ' Error: configStorage: type is not well formed.';
         }
         $self->{type} = "Lemonldap::NG::Common::Conf::$self->{type}"
           unless $self->{type} =~ /^Lemonldap::/;
         eval "require $self->{type}";
         if ($@) {
-            $msg .= "Error: Unknown package $self->{type}";
+            $msg .= " Error: Unknown package $self->{type}.";
             return 0;
         }
         return 0 unless $self->prereq;
         $self->{mdone}++;
-        $msg = "$self->{type} loaded";
+        $msg = "$self->{type} loaded.";
     }
     if ( $self->{localStorage} and not defined( $self->{refLocalStorage} ) ) {
         eval "use $self->{localStorage};";
         if ($@) {
-            $msg .= "Unable to load $self->{localStorage}: $@";
+            $msg .= " Unable to load $self->{localStorage}: $@.";
         }
         else {
             $self->{refLocalStorage} =
@@ -82,39 +93,6 @@ sub new {
     return $self;
 }
 
-## @method private boolean _readConfFile(string file)
-# Read $file to know how to access to Lemonldap::NG configuration.
-# @param $file Optional file name (default: /etc/lemonldap-ng/storage.conf)
-# @return True if the file was successfuly read
-sub _readConfFile {
-    my $self = shift;
-    my $file = shift || DEFAULTCONFFILE;
-    unless ( $_confFiles{$file} ) {
-        unless ( open F, $file ) {
-            $msg = "Warning $file: $!. ";
-            return 0;
-        }
-        while (<F>) {
-            next if ( /^\s*$/ or /^\s*#/ );
-            chomp;
-            s/\r//g;
-            /^\s*([\w]+)(?:\s*[:=]\s*|\s+)(["']?)([\S].*[\S])\2\s*$/ or next;
-            my $k = $1;
-            $_confFiles{$file}->{$k} = $3;
-            if ( $_confFiles{$file}->{$k} =~ /^[{\[].*[}\]]$/ ) {
-                eval "\$_confFiles{'$file'}->{'$k'} = $_confFiles{$file}->{$k}";
-                if ($@) {
-                    $msg = "Warning: error in file $file : $@. ";
-                    return 0;
-                }
-            }
-        }
-        close F;
-    }
-    %$self = ( %$self, %{ $_confFiles{$file} } );
-    return 1;
-}
-
 ## @method int saveConf(hashRef conf)
 # Serialize $conf and call store().
 # @param $conf Lemonldap::NG configuration hashRef
@@ -122,36 +100,16 @@ sub _readConfFile {
 sub saveConf {
     my ( $self, $conf ) = @_;
 
+    my $last = $self->lastCfg;
+
     # If configuration was modified, return an error
-    return CONFIG_WAS_CHANGED
-      if ( $conf->{cfgNum} != $self->lastCfg or $self->isLocked );
-    $self->lock or return DATABASE_LOCKED;
-    my $fields;
-    local $Data::Dumper::Indent = 0;
-    local $Data::Dumper::Varname = "data";
-    while ( my ( $k, $v ) = each(%$conf) ) {
-        next if ( $k =~ /^(?:reVHosts|cipher)$/ );
-        if ( ref($v) ) {
-            $fields->{$k} = Dumper($v);
-            $fields->{$k} =~ s/'/&#39;/g;
-            $fields->{$k} = "'$fields->{$k}'";
-        }
-        elsif ( $v =~ /^\d+$/ ) {
-            $fields->{$k} = "$v";
-        }
-        else {
-
-            # mono-line
-            $v =~ s/[\r\n]/ /gm;
-
-            # trim
-            $v =~ s/^\s*(.*?)\s*$/$1/;
-            $fields->{$k} = "'$v'";
-        }
+    if ( not $self->{force} ) {
+        return CONFIG_WAS_CHANGED if ( $conf->{cfgNum} != $last );
+        return DATABASE_LOCKED if ( $self->isLocked or not $self->lock );
     }
-    $fields->{cfgNum} = $self->lastCfg + 1;
-    $msg = "Configuration $fields->{cfgNum} stored";
-    return $self->store($fields);
+    $conf->{cfgNum} = $last + 1 unless ( $self->{cfgNumFixed} );
+    $msg = "Configuration $conf->{cfgNum} stored.";
+    return $self->store($conf);
 }
 
 ## @method hashRef getConf(hashRef args)
@@ -168,25 +126,25 @@ sub getConf {
         and ref( $self->{refLocalStorage} )
         and my $res = $self->{refLocalStorage}->get('conf') )
     {
-        $msg = "get configuration from cache without verification";
+        $msg = "get configuration from cache without verification.";
         return $res;
     }
     else {
         $args->{cfgNum} ||= $self->lastCfg;
         unless ( $args->{cfgNum} ) {
-            $msg = "No configuration available";
+            $msg = "No configuration available.";
             return 0;
         }
         my $r;
         unless ( ref( $self->{refLocalStorage} ) ) {
-            $msg = "get remote configuration (localStorage unavailable)";
+            $msg = "get remote configuration (localStorage unavailable).";
             $r   = $self->getDBConf($args);
         }
         else {
             $r = $self->{refLocalStorage}->get('conf');
-        if ( $r->{cfgNum} == $args->{cfgNum} ) {
-            $msg = "configuration unchanged, get configuration from cache";
-        }
+            if ( $r->{cfgNum} == $args->{cfgNum} ) {
+                $msg = "configuration unchanged, get configuration from cache.";
+            }
             else {
                 $r = $self->getDBConf($args);
             }
@@ -195,6 +153,9 @@ sub getConf {
             delete $r->{reVHosts};
         }
         else {
+            print STDERR
+              "Warning: key is not defined, set it in the manager !\n"
+              unless ( $r->{key} );
             eval {
                 $r->{cipher} = Lemonldap::NG::Common::Crypto->new(
                     $r->{key} || 'lemonldap-ng-key',
@@ -202,12 +163,100 @@ sub getConf {
                 );
             };
             if ($@) {
-                $msg = "Bad key : $@";
+                $msg = "Bad key : $@.";
                 return 0;
             }
         }
         return $r;
     }
+}
+
+## @method hashRef getLocalConf(string section, string file, int loaddefault)
+# Get configuration from local file
+#
+# @param $section Optional section name (default DEFAULTSECTION)
+# @param $file Optional file name (default DEFAULTCONFFILE)
+# @param $loaddefault Optional load default section parameters (default 1)
+# @return Lemonldap::NG configuration
+sub getLocalConf {
+    my ( $self, $section, $file, $loaddefault ) = @_;
+    my $r = {};
+
+    $section ||= DEFAULTSECTION;
+    $file    ||= DEFAULTCONFFILE;
+    $loaddefault = 1 unless ( defined $loaddefault );
+    my $cfg;
+
+    # First, search if this file has been parsed
+    unless ( $cfg = $configFiles->{$file} ) {
+
+        # If default configuration cannot be read
+        # - Error if configuration section is requested
+        # - Silent exit for other section requests
+        unless ( -r $file ) {
+            if ( $section eq CONFSECTION ) {
+                $msg =
+                  "Cannot read $file to get configuration access parameters.";
+                return $r;
+            }
+            return $r;
+        }
+
+        # Parse ini file
+        $cfg = Config::IniFiles->new( -file => $file, -allowcontinue => 1 );
+
+        unless ( defined $cfg ) {
+            $msg = "Local config error: " . @Config::IniFiles::errors;
+            return $r;
+        }
+
+        # Check if default section exists
+        unless ( $cfg->SectionExists(DEFAULTSECTION) ) {
+            $msg = "Default section (" . DEFAULTSECTION . ") is missing.";
+            return $r;
+        }
+
+        # Check if configuration section exists
+        if ( $section eq CONFSECTION and !$cfg->SectionExists(CONFSECTION) ) {
+            $msg = "Configuration section (" . CONFSECTION . ") is missing.";
+            return $r;
+        }
+        $configFiles->{$file} = $cfg;
+    }
+
+    # First load all default section parameters
+    if ($loaddefault) {
+        foreach ( $cfg->Parameters(DEFAULTSECTION) ) {
+            $r->{$_} = $cfg->val( DEFAULTSECTION, $_ );
+            if ( $r->{$_} =~ /^[{\[].*[}\]]$/ ) {
+                eval "\$r->{$_} = $r->{$_}";
+                if ($@) {
+                    $msg = "Warning: error in file $file: $@.";
+                    return $r;
+                }
+            }
+        }
+    }
+
+    # Stop if the requested section is the default section
+    return $r if ( $section eq DEFAULTSECTION );
+
+    # Check if requested section exists
+    return $r unless $cfg->SectionExists($section);
+
+    # Load section parameters
+    foreach ( $cfg->Parameters($section) ) {
+        $r->{$_} = $cfg->val( $section, $_ );
+        if ( $r->{$_} =~ /^[{\[].*[}\]]$/ ) {
+            eval "\$r->{$_} = $r->{$_}";
+            if ($@) {
+                $msg = "Warning: error in file $file: $@.";
+                return $r;
+            }
+        }
+    }
+
+    return $r;
 }
 
 ## @method void setLocalConf(hashRef conf)
@@ -234,42 +283,8 @@ sub getDBConf {
           ? ( $a[ $#a + $args->{cfgNum} ] )
           : $a[0];
     }
-    my $fields = $self->load( $args->{cfgNum} );
-    my $conf;
-    while ( my ( $k, $v ) = each(%$fields) ) {
-        $v =~ s/^'(.*)'$/$1/s;
-        if ( $k =~
-/^(?:exportedVars|locationRules|groups|exportedHeaders|macros|globalStorageOptions)$/
-            and $v ||= {}
-            and not ref($v) )
-        {
-            $conf->{$k} = {};
-            if ( defined($v) and $v !~ /^\$/ ) {
-                print STDERR
-"Lemonldap::NG : Warning: configuration is in old format, you've to migrate !\n";
-                eval { require Storable; require MIME::Base64; };
-                if ($@) {
-                    $msg = "Error : $@";
-                    return 0;
-                }
-                $conf->{$k} = Storable::thaw( MIME::Base64::decode_base64($v) );
-            }
-            else {
-                my $data;
-                $v =~ s/^\$([_a-zA-Z][_a-zA-Z0-9]*) *=/\$data =/;
-                $v =~ s/&#?39;/'/g;
-                eval $v;
-                print STDERR
-"Lemonldap::NG : Error while reading configuration with $k key: $@\n"
-                  if ($@);
-                $conf->{$k} = $data;
-            }
-        }
-        else {
-            $conf->{$k} = $v;
-        }
-    }
-    $msg = "Get configuration $conf->{cfgNum}";
+    my $conf = $self->load( $args->{cfgNum} );
+    $msg = "Get configuration $conf->{cfgNum}.";
     my $re = Regexp::Assemble->new();
     foreach ( keys %{ $conf->{locationRules} } ) {
         $_ = quotemeta($_);
@@ -349,10 +364,16 @@ sub delete {
     return &{ $self->{type} . '::delete' }( $self, $a[ $#a + $c ] );
 }
 
+sub logError {
+    return &{ $_[0]->{type} . '::logError' }(@_);
+}
+
 1;
 __END__
 
 =head1 NAME
+
+=encoding utf8
 
 Lemonldap::NG::Common::Conf - Perl extension written to manage Lemonldap::NG
 Web-SSO configuration.
@@ -389,7 +410,7 @@ L<Lemonldap::NG::Portal> and L<Lemonldap::NG::Manager>.
 =over
 
 =item * B<new> (constructor): it takes different arguments depending on the
-choosen type. Examples:
+chosen type. Examples:
 
 =over
 

@@ -3,14 +3,14 @@ package Lemonldap::NG::Common::Conf::SOAP;
 use strict;
 use SOAP::Lite;
 
-our $VERSION = 0.21;
+our $VERSION = '0.99';
 
 #parameter proxy Url of SOAP service
 #parameter proxyOptions SOAP::Lite parameters
 
 BEGIN {
     *Lemonldap::NG::Common::Conf::_soapCall = \&_soapCall;
-    *Lemonldap::NG::Common::Conf::_connect = \&_connect;
+    *Lemonldap::NG::Common::Conf::_connect  = \&_connect;
 
     sub SOAP::Transport::HTTP::Client::get_basic_credentials {
         return $Lemonldap::NG::Common::Conf::SOAP::username =>
@@ -94,6 +94,8 @@ sub load {
 __END__
 
 =head1 NAME
+
+=encoding utf8
 
 Lemonldap::NG::Common::Conf::SOAP - Perl extension written to access to
 Lemonldap::NG Web-SSO configuration via SOAP.

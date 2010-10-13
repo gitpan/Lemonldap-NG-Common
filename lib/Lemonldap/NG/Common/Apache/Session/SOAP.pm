@@ -8,7 +8,7 @@ package Lemonldap::NG::Common::Apache::Session::SOAP;
 use strict;
 use SOAP::Lite;
 
-our $VERSION = 0.4;
+our $VERSION = '0.99';
 
 #parameter proxy Url of SOAP service
 #parameter proxyOptions SOAP::Lite options
@@ -194,11 +194,11 @@ sub get_key_from_all_sessions() {
         my $r = $self->_soapCall( "get_key_from_all_sessions", $args );
         my $res;
         if ($r) {
-        foreach my $k ( keys %$r ) {
-            my $tmp = &$data( $r->{$k}, $k );
-            $res->{$k} = $tmp if ( defined($tmp) );
+            foreach my $k ( keys %$r ) {
+                my $tmp = &$data( $r->{$k}, $k );
+                $res->{$k} = $tmp if ( defined($tmp) );
+            }
         }
-    }
     }
     else {
         return $self->_soapCall( "get_key_from_all_sessions", $args, $data );
@@ -209,6 +209,8 @@ sub get_key_from_all_sessions() {
 __END__
 
 =head1 NAME
+
+=encoding utf8
 
 Lemonldap::NG::Common::Apache::Session::SOAP - Perl extension written to
 access to Lemonldap::NG Web-SSO sessions via SOAP.

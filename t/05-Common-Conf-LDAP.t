@@ -14,25 +14,17 @@ BEGIN { use_ok('Lemonldap::NG::Common::Conf') }
 # its man page ( perldoc Test::More ) for help writing this test script.
 
 my $h;
-my $inifile     = "lemonldap-ng.ini";
-my $confsection = "configuration";
-
 ok(
-    (
-        Lemonldap::NG::Common::Conf->new( type => 'bad' ) == 0
-          and $Lemonldap::NG::Common::Conf::msg =~
-          /Error: Unknown package Lemonldap::NG::Common::Conf::bad\.$/
-    ),
-    'Bad module'
+    $h = new Lemonldap::NG::Common::Conf(
+        {
+            type             => 'LDAP',
+            ldapServer       => 'ldap://localhost',
+            ldapConfBase     => 'ou=conf,ou=websso,dc=example,dc=com',
+            ldapBindDN       => 'cn=admin,dc=example,dc=com',
+            ldapBindPassword => 'secret',
+        }
+    )
 );
 
-$h = bless {}, 'Lemonldap::NG::Common::Conf';
-
-ok(
-    (
-        %$h = ( %$h, %{ $h->getLocalConf( $confsection, $inifile, 0 ) } )
-          and exists $h->{localStorage}
-    ),
-    "Read $inifile"
-);
+ok( $h->can('ldap') );
 

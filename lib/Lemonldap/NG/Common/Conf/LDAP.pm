@@ -8,12 +8,12 @@ package Lemonldap::NG::Common::Conf::LDAP;
 use strict;
 use Net::LDAP;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
+use Lemonldap::NG::Common::Conf::Serializer;
 
-our $VERSION = 0.01;
+our $VERSION = '0.99';
 
 BEGIN {
-    *Lemonldap::NG::Common::Conf::ldap     = \&ldap;
-    *Lemonldap::NG::Common::Conf::logError = \&logError;
+    *Lemonldap::NG::Common::Conf::ldap = \&ldap;
 }
 
 sub prereq {
@@ -56,7 +56,7 @@ sub lastCfg {
 
 sub ldap {
     my $self = shift;
-    return $self->{ldap} if($self->{ldap});
+    return $self->{ldap} if ( $self->{ldap} );
 
     # Parse servers configuration
     my $useTls = 0;
@@ -106,22 +106,26 @@ sub ldap {
 }
 
 sub lock {
+
     # No lock for LDAP
     return 1;
 }
 
 sub isLocked {
+
     # No lock for LDAP
     return 0;
 }
 
 sub unlock {
+
     # No lock for LDAP
     return 1;
 }
 
 sub store {
     my ( $self, $fields ) = @_;
+    $fields = $self->serialize($fields);
 
     my $confName = "lmConf-" . $fields->{cfgNum};
     my $confDN   = "cn=$confName," . $self->{ldapConfBase};
@@ -172,7 +176,7 @@ sub load {
         }
     }
     $self->ldap->unbind() && delete $self->{ldap};
-    return $f;
+    return $self->unserialize($f);
 }
 
 sub delete {

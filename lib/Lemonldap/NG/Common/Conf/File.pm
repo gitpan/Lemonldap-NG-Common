@@ -1,9 +1,10 @@
 package Lemonldap::NG::Common::Conf::File;
 
 use strict;
-use Lemonldap::NG::Common::Conf::Constants; #inherits
+use Lemonldap::NG::Common::Conf::Constants;    #inherits
+use Lemonldap::NG::Common::Conf::Serializer;
 
-our $VERSION = 0.23;
+our $VERSION = '0.99';
 
 sub prereq {
     my $self = shift;
@@ -63,6 +64,7 @@ sub unlock {
 
 sub store {
     my ( $self, $fields ) = @_;
+    $fields = $self->serialize($fields);
     my $mask = umask;
     umask( oct('0027') );
     unless ( open FILE,
@@ -72,8 +74,8 @@ sub store {
         $self->unlock;
         return UNKNOWN_ERROR;
     }
-    while ( my ( $k, $v ) = each(%$fields) ) {
-        print FILE "$k\n\t$v\n\n";
+    foreach my $k ( sort keys %$fields ) {
+        print FILE "$k\n\t$fields->{$k}\n\n";
     }
     close FILE;
     umask($mask);
@@ -98,7 +100,7 @@ sub load {
         }
     }
     close FILE;
-    return $f;
+    return $self->unserialize($f);
 }
 
 sub delete {

@@ -1,6 +1,6 @@
 package Lemonldap::NG::Common;
 
-our $VERSION='0.95';
+our $VERSION = '0.99';
 
 use strict;
 
@@ -8,6 +8,8 @@ use strict;
 __END__
 
 =head1 NAME
+
+=encoding utf8
 
 Lemonldap::NG::Common - Common files for Lemonldap::NG infrastructure
 

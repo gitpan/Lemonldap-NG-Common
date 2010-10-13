@@ -10,10 +10,11 @@ use strict;
 use MIME::Base64;
 use Time::Local;
 use CGI;
+use utf8;
 
 #parameter syslog Indicates syslog facility for logging user actions
 
-our $VERSION = '0.51';
+our $VERSION = '0.99';
 
 use base qw(CGI);
 
@@ -80,22 +81,34 @@ sub rparam {
 # @param $level Level (debug|info|notice|error)
 sub lmLog {
     my ( $self, $mess, $level ) = @_;
-    $mess = ( ref($self) ? ref($self) : $self ) . ": $mess"
-      if ( $level eq 'debug' );
+    my $call;
+    if ( $level eq 'debug' ) {
+        $mess = ( ref($self) ? ref($self) : $self ) . ": $mess";
+    }
+    else {
+        my @tmp = caller();
+        $call = "$tmp[1] $tmp[2]:";
+    }
     if ( $self->r and MP() ) {
         $self->abort( "Level is required",
             'the parameter "level" is required when lmLog() is used' )
           unless ($level);
         if ( MP() == 2 ) {
             require Apache2::Log;
+            Apache2::ServerRec->log->debug($call) if ($call);
             Apache2::ServerRec->log->$level($mess);
         }
         else {
+            Apache->server->log->debug($call) if ($call);
             Apache->server->log->$level($mess);
         }
     }
     else {
-        print STDERR "$mess\n" unless ( $level =~ /^(?:debug|info)$/ );
+        $self->{hideLogLevels} = 'debug|info'
+          unless defined( $self->{hideLogLevels} );
+        my $re = qr/^(?:$self->{hideLogLevels})$/;
+        print STDERR "$call\n" if ( $call and 'debug' !~ $re );
+        print STDERR "[$level] $mess\n" unless ( $level =~ $re );
     }
 }
 
@@ -114,6 +127,7 @@ sub setApacheUser {
             $self->r->connection->user($user);
         }
     }
+    $ENV{REMOTE_USER} = $user;
 }
 
 ## @method void soapTest(string soapFunctions, object obj)
@@ -126,8 +140,10 @@ sub soapTest {
 
     # If non form encoded datas are posted, we call SOAP Services
     if ( $ENV{HTTP_SOAPACTION} ) {
-        require Lemonldap::NG::Common::CGI::SOAPServer;    #link protected dispatcher
-        require Lemonldap::NG::Common::CGI::SOAPService;   #link protected soapService
+        require
+          Lemonldap::NG::Common::CGI::SOAPServer;    #link protected dispatcher
+        require
+          Lemonldap::NG::Common::CGI::SOAPService;   #link protected soapService
         my @func = (
             ref($soapFunctions) ? @$soapFunctions : split /\s+/,
             $soapFunctions
@@ -207,9 +223,20 @@ sub abort {
     print $cgi->start_html(
         -title    => $t1,
         -encoding => 'utf8',
+        -style    => {
+            -code => '
+body{
+	background:#000;
+	color:#fff;
+	padding:10px 50px;
+	font-family:sans-serif;
+}
+        '
+        },
     );
-    print "<h1>$t1</h1>";
-    print "<p>$t2</p>";
+    print "<h1>$t1</h1><p>$t2</p>";
+    print
+'<center><img alt="Lemonldap::NG" src="http://lemonldap.ow2.org/logo_lemonldap-ng.png" /></center>';
     print STDERR ( ref($self) || $self ) . " error: $t1, $t2\n";
     exit;
 }
@@ -220,7 +247,8 @@ sub startSyslog {
     my $self = shift;
     return if ( $self->{_syslog} );
     eval {
-        use Sys::Syslog;
+        require Sys::Syslog;
+        Sys::Syslog->import(':standard');
         openlog( 'lemonldap-ng', 'ndelay', $self->{syslog} );
     };
     $self->abort( "Unable to use syslog", $@ ) if ($@);
@@ -247,7 +275,7 @@ sub userLog {
 # @param $mess string to log
 sub userInfo {
     my ( $self, $mess ) = @_;
-    $mess = "Lemonldap::NG portal: $mess ($ENV{REMOTE_ADDR})";
+    $mess = "Lemonldap::NG : $mess ($ENV{REMOTE_ADDR})";
     $self->userLog( $mess, 'info' );
 }
 
@@ -257,7 +285,7 @@ sub userInfo {
 # @param $mess string to log
 sub userNotice {
     my ( $self, $mess ) = @_;
-    $mess = "Lemonldap::NG portal: $mess ($ENV{REMOTE_ADDR})";
+    $mess = "Lemonldap::NG : $mess ($ENV{REMOTE_ADDR})";
     $self->userLog( $mess, 'notice' );
 }
 
@@ -267,7 +295,7 @@ sub userNotice {
 # @param $mess string to log
 sub userError {
     my ( $self, $mess ) = @_;
-    $mess = "Lemonldap::NG portal: $mess ($ENV{REMOTE_ADDR})";
+    $mess = "Lemonldap::NG : $mess ($ENV{REMOTE_ADDR})";
     $self->userLog( $mess, 'warn' );
 }
 
@@ -287,6 +315,36 @@ sub _sub {
     }
 }
 
+##@method void translate_template(string text_ref, string lang)
+# translate_template is used as an HTML::Template filter to tranlate strings in
+# the wanted language
+#@param text_ref reference to the string to translate
+#@param lang optionnal language wanted. Falls to browser language instead.
+#@return
+sub translate_template {
+    my $self     = shift;
+    my $text_ref = shift;
+    my $lang     = shift || $ENV{HTTP_ACCEPT_LANGUAGE};
+
+    # Get the lang code (2 letters)
+    $lang = lc($lang);
+    $lang =~ s/-/_/g;
+    $lang =~ s/^(..).*$/$1/;
+
+    # Decode UTF-8
+    utf8::decode($$text_ref);
+
+    # Test if a translation is available for the selected language
+    # If not available, return the first translated string
+    # <lang en="Please enter your credentials" fr="Merci de vous autentifier"/>
+    if ( $$text_ref =~ m/$lang=\"(.*?)\"/ ) {
+        $$text_ref =~ s/<lang.*$lang=\"(.*?)\".*?\/>/$1/gx;
+    }
+    else {
+        $$text_ref =~ s/<lang\s+\w+=\"(.*?)\".*?\/>/$1/gx;
+    }
+}
+
 ## @method private void quit()
 # Simply exit.
 sub quit {
@@ -298,6 +356,8 @@ sub quit {
 __END__
 
 =head1 NAME
+
+=encoding utf8
 
 Lemonldap::NG::Common::CGI - Simple module to extend L<CGI> to manage
 HTTP "If-Modified-Since / 304 Not Modified" system.

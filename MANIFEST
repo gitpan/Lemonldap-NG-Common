@@ -1,4 +1,5 @@
 Changes
+lemonldap-ng.ini
 lib/Lemonldap/NG/Common.pm
 lib/Lemonldap/NG/Common/Apache/Session.pm
 lib/Lemonldap/NG/Common/Apache/Session/SOAP.pm
@@ -7,24 +8,32 @@ lib/Lemonldap/NG/Common/CGI.pm
 lib/Lemonldap/NG/Common/CGI/SOAPServer.pm
 lib/Lemonldap/NG/Common/CGI/SOAPService.pm
 lib/Lemonldap/NG/Common/Conf.pm
+lib/Lemonldap/NG/Common/Conf/_DBI.pm
+lib/Lemonldap/NG/Common/Conf/CDBI.pm
 lib/Lemonldap/NG/Common/Conf/Constants.pm
 lib/Lemonldap/NG/Common/Conf/DBI.pm
 lib/Lemonldap/NG/Common/Conf/File.pm
 lib/Lemonldap/NG/Common/Conf/LDAP.pm
+lib/Lemonldap/NG/Common/Conf/RDBI.pm
+lib/Lemonldap/NG/Common/Conf/SAML/Metadata.pm
+lib/Lemonldap/NG/Common/Conf/Serializer.pm
 lib/Lemonldap/NG/Common/Conf/SOAP.pm
 lib/Lemonldap/NG/Common/Crypto.pm
+lib/Lemonldap/NG/Common/Regexp.pm
 lib/Lemonldap/NG/Common/Safelib.pm
 Makefile.PL
-MANIFEST
-META.yml			Module meta-data (added by MakeMaker)
+MANIFEST			This list of files
+META.yml
 README
-scripts/lmConfig_File2LDIF
-scripts/lmConfig_File2MySQL
-storage.conf
+scripts/convertConfig
+scripts/lmMigrateConfFiles2ini
 t/01-Common-Conf.t
 t/02-Common-Conf-File.t
+t/03-Common-Conf-CDBI.t
 t/03-Common-Conf-DBI.t
+t/03-Common-Conf-RDBI.t
 t/04-Common-Conf-SOAP.t
+t/05-Common-Conf-LDAP.t
 t/20-Common-CGI.t
 t/30-Common-Safelib.t
 t/99-pod.t

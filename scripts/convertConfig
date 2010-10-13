@@ -1,0 +1,90 @@
+#!/usr/bin/perl
+
+use strict;
+use Getopt::Long;
+use Lemonldap::NG::Common::Conf;
+
+my %opts;
+my $result = GetOptions( \%opts, 'help|h', 'current|c=s', 'new|n=s', 'latest|l',
+    'force|f' );
+
+if ( $opts{help} or not( $opts{current} and $opts{new} ) ) {
+    print STDERR "
+               ## Lemonldap::NG configuration converter ##
+
+Usage: $0 --current=/current/lemonldap-ng.ini --new=/new/lemonldap-ng.ini
+
+other parameters:
+    --latest -l
+        convert only last configuration
+    --force -f
+        continue even if an error occurs
+
+";
+    exit 1;
+}
+
+foreach ( $opts{current}, $opts{new} ) {
+    unless ( -e $_ ) {
+        print STDERR "$_ does not exist\n";
+        exit 2;
+    }
+    unless ( -r $_ ) {
+        print STDERR "$_ is not readable\n";
+        exit 3;
+    }
+}
+my $old = Lemonldap::NG::Common::Conf->new(
+    {
+        confFile => $opts{current},
+        noCache  => 1,
+    }
+);
+unless ($old) {
+    print STDERR
+      "Failed to get current conf : $Lemonldap::NG::Common::Conf::msg\n";
+    exit 4;
+}
+my $new = Lemonldap::NG::Common::Conf->new(
+    {
+        confFile    => $opts{new},
+        force       => 1,
+        noCache     => 1,
+        cfgNumFixed => 1,
+    }
+);
+unless ($new) {
+    print STDERR
+      "Failed to create new conf object : $Lemonldap::NG::Common::Conf::msg\n";
+    exit 5;
+}
+my @available;
+if ( $opts{lastest} ) {
+    @available = $old->lastCfg();
+}
+else {
+    @available = $old->available();
+}
+foreach (@available) {
+    my $conf = $old->getConf( { cfgNum => $_ } );
+    eval {
+        delete $conf->{reVHosts};
+        delete $conf->{cipher};
+    };
+    unless ($conf) {
+        print STDERR
+          "\nFailed to get conf $_ : $Lemonldap::NG::Common::Conf::msg\n";
+        next if ( $opts{force} );
+        exit 6;
+    }
+    if ( my $r = $new->saveConf($conf) ) {
+        print "Conf $conf->{cfgNum} stored\n";
+        next;
+    }
+    print STDERR
+"Unable to store configuration $conf->{cfgNum}: $Lemonldap::NG::Common::Conf::msg";
+    next if ( $opts{force} );
+    exit 7;
+}
+exit 0;
+

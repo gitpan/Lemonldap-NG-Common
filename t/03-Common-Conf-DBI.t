@@ -25,5 +25,5 @@ ok(
     )
 );
 
-ok( $h->can('dbh') );
+ok( $h->can('_dbh') );
 
