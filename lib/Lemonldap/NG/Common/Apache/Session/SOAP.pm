@@ -8,7 +8,7 @@ package Lemonldap::NG::Common::Apache::Session::SOAP;
 use strict;
 use SOAP::Lite;
 
-our $VERSION = '0.99.1';
+our $VERSION = '0.991';
 
 #parameter proxy Url of SOAP service
 #parameter proxyOptions SOAP::Lite options

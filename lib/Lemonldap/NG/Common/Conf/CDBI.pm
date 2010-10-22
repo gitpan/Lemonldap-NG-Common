@@ -4,7 +4,7 @@ use strict;
 require Storable;
 use Lemonldap::NG::Common::Conf::_DBI;
 
-our $VERSION = '0.99.1';
+our $VERSION = '0.991';
 our @ISA     = qw(Lemonldap::NG::Common::Conf::_DBI);
 
 sub store {
