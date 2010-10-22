@@ -36,7 +36,10 @@ t/04-Common-Conf-SOAP.t
 t/05-Common-Conf-LDAP.t
 t/20-Common-CGI.t
 t/30-Common-Safelib.t
+t/35-Common-Crypto.t
+t/36-Common-Regexp.t
 t/99-pod.t
 tools/apache-session-mysql.sql
-tools/lmConfig.mysql
+tools/lmConfig.CDBI.mysql
+tools/lmConfig.RDBI.mysql
 tools/sso.schema

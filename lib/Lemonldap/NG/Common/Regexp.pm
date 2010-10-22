@@ -5,8 +5,6 @@ package Lemonldap::NG::Common::Regexp;
 
 use AutoLoader 'AUTOLOAD';
 
-our $VERSION = '0.99';
-
 use constant {
     HOST =>
 qr{^(?:(?:(?:(?:(?:[a-zA-Z0-9][-a-zA-Z0-9]*)?[a-zA-Z0-9])[.])*(?:[a-zA-Z][-a-zA-Z0-9]*[a-zA-Z0-9]|[a-zA-Z])[.]?)|(?:[0-9]+[.][0-9]+[.][0-9]+[.][0-9]+)|.{0})$},

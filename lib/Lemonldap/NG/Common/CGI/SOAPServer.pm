@@ -11,7 +11,7 @@ use SOAP::Transport::HTTP;
 use base qw(SOAP::Transport::HTTP::Server);
 use bytes;
 
-our $VERSION = '0.99';
+our $VERSION = '0.99.1';
 
 ## @method protected void DESTROY()
 # Call SOAP::Trace::objects().

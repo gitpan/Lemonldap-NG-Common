@@ -12,7 +12,7 @@ use MIME::Base64;
 use bytes;
 use base qw(Crypt::Rijndael);
 
-our $VERSION = '0.99';
+our $VERSION = '0.99.1';
 
 our $msg;
 

@@ -2,8 +2,6 @@ package Lemonldap::NG::Common::Conf::Serializer;
 
 use Data::Dumper;
 
-our $VERSION = '0.99';
-
 BEGIN {
     *Lemonldap::NG::Common::Conf::normalize   = \&normalize;
     *Lemonldap::NG::Common::Conf::unnormalize = \&unnormalize;

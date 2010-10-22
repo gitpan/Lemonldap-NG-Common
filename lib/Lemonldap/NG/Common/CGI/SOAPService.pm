@@ -7,7 +7,7 @@ package Lemonldap::NG::Common::CGI::SOAPService;
 
 require SOAP::Lite;
 
-our $VERSION = '0.99';
+our $VERSION = '0.99.1';
 
 ## @cmethod Lemonldap::NG::Common::CGI::SOAPService new(object obj,string @func)
 # Constructor
