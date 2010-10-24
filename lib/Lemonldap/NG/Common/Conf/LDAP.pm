@@ -10,7 +10,7 @@ use Net::LDAP;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 use Lemonldap::NG::Common::Conf::Serializer;
 
-our $VERSION = '0.991';
+our $VERSION = '0.992';
 
 BEGIN {
     *Lemonldap::NG::Common::Conf::ldap = \&ldap;

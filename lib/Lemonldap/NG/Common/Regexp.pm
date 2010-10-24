@@ -18,9 +18,6 @@ qr{^(?:https?://(?:(?:(?:(?:(?:(?:[a-zA-Z0-9][-a-zA-Z0-9]*)?[a-zA-Z0-9])[.])*(?:
 
 __END__
 
-=pod
-
-=cut
 sub reDomainsToHost {
     my $list = shift;
     return qr/^$/ unless ($list);

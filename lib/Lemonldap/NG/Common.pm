@@ -1,6 +1,6 @@
 package Lemonldap::NG::Common;
 
-our $VERSION = '0.991';
+our $VERSION = '0.992';
 
 use strict;
 
@@ -30,7 +30,7 @@ Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2008 by guimard
+Copyright (C) 2008, 2010 by guimard
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.10.0 or,

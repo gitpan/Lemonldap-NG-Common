@@ -11,7 +11,7 @@ use MIME::Base64;
 
 #use AutoLoader qw(AUTOLOAD);
 
-our $VERSION = '0.991';
+our $VERSION = '0.992';
 
 # Set here all the names of functions that must be available in Safe objects.
 # Not that only functions, not methods, can be written here
@@ -174,7 +174,7 @@ Clement Oudot
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2009 by Xavier Guimard
+Copyright (C) 2009, 2010 by Xavier Guimard
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.10.0 or,

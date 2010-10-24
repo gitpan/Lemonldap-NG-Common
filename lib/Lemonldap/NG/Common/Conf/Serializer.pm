@@ -64,9 +64,6 @@ sub serialize {
     # Parse configuration
     while ( my ( $k, $v ) = each(%$conf) ) {
 
-        # Ignore reVhost and cipher
-        next if ( $k =~ /^(?:reVHosts|cipher)$/ );
-
         # 1.Hash ref
         if ( ref($v) ) {
             $fields->{$k} = $self->normalize( Dumper($v) );

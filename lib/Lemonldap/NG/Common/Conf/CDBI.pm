@@ -4,23 +4,20 @@ use strict;
 require Storable;
 use Lemonldap::NG::Common::Conf::_DBI;
 
-our $VERSION = '0.991';
+our $VERSION = '0.992';
 our @ISA     = qw(Lemonldap::NG::Common::Conf::_DBI);
 
 sub store {
     my ( $self, $fields ) = @_;
     my $cfgNum = $fields->{cfgNum};
     $fields = Storable::nfreeze($fields);
-    $fields =~ s/'/''/gs;
-    my $tmp =
-      $self->_dbh->do( "insert into "
-          . $self->{dbiTable}
-          . " (cfgNum,data) values ($cfgNum,'$fields')" );
+    my $tmp = $self->_dbh->prepare(
+        "insert into $self->{dbiTable} (cfgNum,data) values (?,?)");
     unless ($tmp) {
         $self->logError;
         return UNKNOWN_ERROR;
     }
-    unless ( $self->unlock ) {
+    unless ( $tmp->execute( $cfgNum, $fields ) ) {
         $self->logError;
         return UNKNOWN_ERROR;
     }
@@ -38,7 +35,7 @@ sub load {
         return 0;
     }
     my $r;
-    eval { $r = Storable::thaw( $row->[1] ); };
+    eval { $r = Storable::thaw( $row->[0] ); };
     if ($@) {
         $Lemonldap::NG::Common::Conf::msg =
           "Bad stored data in conf database: $@";

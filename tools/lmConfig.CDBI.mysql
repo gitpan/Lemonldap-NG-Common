@@ -1,6 +1,5 @@
 CREATE TABLE lmConfig (
 	cfgNum int not null primary key,
-	field text,
-	value longblob
+	data longblob
 );
 

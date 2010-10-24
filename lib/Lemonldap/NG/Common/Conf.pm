@@ -20,7 +20,7 @@ use Config::IniFiles;
 #inherits Lemonldap::NG::Common::Conf::SOAP
 #inherits Lemonldap::NG::Common::Conf::LDAP
 
-our $VERSION = '0.991';
+our $VERSION = '0.992';
 our $msg;
 our $configFiles;
 
@@ -105,11 +105,15 @@ sub saveConf {
     # If configuration was modified, return an error
     if ( not $self->{force} ) {
         return CONFIG_WAS_CHANGED if ( $conf->{cfgNum} != $last );
-        return DATABASE_LOCKED if ( $self->isLocked or not $self->lock );
+        return DATABASE_LOCKED if ( $self->isLocked() or not $self->lock() );
     }
     $conf->{cfgNum} = $last + 1 unless ( $self->{cfgNumFixed} );
+    foreach my $k (qw(reVHosts cipher)) {
+        delete( $conf->{$k} );
+    }
     $msg = "Configuration $conf->{cfgNum} stored.";
-    return $self->store($conf);
+    my $tmp = $self->store($conf);
+    return ( $self->unlock() ? $tmp : UNKNOWN_ERROR );
 }
 
 ## @method hashRef getConf(hashRef args)
@@ -499,7 +503,7 @@ L<http://forge.objectweb.org/project/showfiles.php?group_id=274>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006-2007 by Xavier Guimard
+Copyright (C) 2006, 2007, 2010 by Xavier Guimard
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.8 or,

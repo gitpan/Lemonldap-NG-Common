@@ -14,7 +14,7 @@ use utf8;
 
 #parameter syslog Indicates syslog facility for logging user actions
 
-our $VERSION = '0.991';
+our $VERSION = '0.992';
 
 use base qw(CGI);
 
@@ -396,7 +396,7 @@ Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006-2007 by Xavier Guimard E<lt>x.guimard@free.frE<gt>
+Copyright (C) 2006, 2007, 2010 by Xavier Guimard E<lt>x.guimard@free.frE<gt>
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.4 or,
