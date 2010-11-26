@@ -20,9 +20,16 @@ use Config::IniFiles;
 #inherits Lemonldap::NG::Common::Conf::SOAP
 #inherits Lemonldap::NG::Common::Conf::LDAP
 
-our $VERSION = '0.992';
+our $VERSION = '1.0.0';
 our $msg;
-our $configFiles;
+our $iniObj;
+
+BEGIN {
+    eval {
+        require threads::shared;
+        threads::shared::share($iniObj);
+    };
+}
 
 ## @cmethod Lemonldap::NG::Common::Conf new(hashRef arg)
 # Constructor.
@@ -145,8 +152,9 @@ sub getConf {
             $r   = $self->getDBConf($args);
         }
         else {
-            $r = $self->{refLocalStorage}->get('conf');
-            if ( $r->{cfgNum} == $args->{cfgNum} ) {
+            eval { $r = $self->{refLocalStorage}->get('conf') };
+            $msg = "Warn: $@" if ($@);
+            if ( ref($r) and $r->{cfgNum} == $args->{cfgNum} ) {
                 $msg = "configuration unchanged, get configuration from cache.";
             }
             else {
@@ -187,12 +195,12 @@ sub getLocalConf {
     my $r = {};
 
     $section ||= DEFAULTSECTION;
-    $file    ||= DEFAULTCONFFILE;
+    $file ||= $self->{confFile} || DEFAULTCONFFILE;
     $loaddefault = 1 unless ( defined $loaddefault );
     my $cfg;
 
     # First, search if this file has been parsed
-    unless ( $cfg = $configFiles->{$file} ) {
+    unless ( $cfg = $iniObj->{$file} ) {
 
         # If default configuration cannot be read
         # - Error if configuration section is requested
@@ -225,8 +233,8 @@ sub getLocalConf {
             $msg = "Configuration section (" . CONFSECTION . ") is missing.";
             return $r;
         }
-        $configFiles->{$file} = $cfg;
     }
+    $self->{_iniObj} = $cfg;
 
     # First load all default section parameters
     if ($loaddefault) {
@@ -268,7 +276,8 @@ sub getLocalConf {
 # @param $conf Lemonldap::NG configuration hashRef
 sub setLocalConf {
     my ( $self, $conf ) = @_;
-    $self->{refLocalStorage}->set( "conf", $conf );
+    eval { $self->{refLocalStorage}->set( "conf", $conf ) };
+    $msg .= "Warn: $@" if ($@);
 }
 
 ## @method hashRef getDBConf(hashRef args)
@@ -485,7 +494,7 @@ getConf returns all (C<select * from lmConfig>).
 =head1 SEE ALSO
 
 L<Lemonldap::NG::Handler>, L<Lemonldap::NG::Portal>,
-http://wiki.lemonldap.objectweb.org/xwiki/bin/view/NG/Presentation
+L<http://lemonldap-ng.org/>
 
 =head1 AUTHOR
 
@@ -494,7 +503,7 @@ Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 =head1 BUG REPORT
 
 Use OW2 system to report bug or ask for features:
-L<http://forge.objectweb.org/tracker/?group_id=274>
+L<http://jira.ow2.org>
 
 =head1 DOWNLOAD
 
@@ -506,7 +515,7 @@ L<http://forge.objectweb.org/project/showfiles.php?group_id=274>
 Copyright (C) 2006, 2007, 2010 by Xavier Guimard
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.8.8 or,
+it under the same terms as Perl itself, either Perl version 5.10.0 or,
 at your option, any later version of Perl 5 you may have available.
 
 =cut

@@ -4,7 +4,7 @@ use strict;
 use DBI;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 
-our $VERSION = '0.992';
+our $VERSION = '1.0.0';
 our @ISA     = qw(Lemonldap::NG::Common::Conf::Constants);
 our ( @EXPORT, %EXPORT_TAGS );
 
@@ -69,6 +69,7 @@ sub lock {
             my @row = $sth->fetchrow_array;
             return $row[0] || 0;
         };
+        return 1;
     }
     else {
 
@@ -88,6 +89,7 @@ sub isLocked {
             my @row = $sth->fetchrow_array;
             return $row[0] ? 0 : 1;
         };
+        return 0;
     }
     else {
 
@@ -107,6 +109,7 @@ sub unlock {
             my @row = $sth->fetchrow_array;
             return $row[0] || 0;
         };
+        return 1;
     }
     else {
 

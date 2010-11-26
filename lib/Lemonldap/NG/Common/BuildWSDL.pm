@@ -7,7 +7,7 @@ package Lemonldap::NG::Common::BuildWSDL;
 
 use Lemonldap::NG::Common::Conf;
 
-our $VERSION = '0.992';
+our $VERSION = '1.0.0';
 
 ## @cmethod Lemonldap::NG::Common::Conf new(hashref configStorage);
 # Constructor

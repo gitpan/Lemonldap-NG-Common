@@ -7,7 +7,7 @@ package Lemonldap::NG::Common::CGI::SOAPService;
 
 require SOAP::Lite;
 
-our $VERSION = '0.992';
+our $VERSION = '1.0.0';
 
 ## @cmethod Lemonldap::NG::Common::CGI::SOAPService new(object obj,string @func)
 # Constructor
@@ -64,7 +64,7 @@ access.
 
 =head1 SEE ALSO
 
-L<http://lemonldap.objectweb.org/>, L<Lemonldap::NG::Common::CGI>
+L<http://lemonldap-ng.org/>, L<Lemonldap::NG::Common::CGI>
 
 =head1 AUTHOR
 

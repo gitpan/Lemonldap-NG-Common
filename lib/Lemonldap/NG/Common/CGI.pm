@@ -14,7 +14,7 @@ use utf8;
 
 #parameter syslog Indicates syslog facility for logging user actions
 
-our $VERSION = '0.992';
+our $VERSION = '1.0.0';
 
 use base qw(CGI);
 
@@ -388,7 +388,7 @@ a filename: the last modify date of this file is used for reference.
 =head1 SEE ALSO
 
 L<Lemonldap::NG::Manager>, L<CGI>,
-http://wiki.lemonldap.objectweb.org/xwiki/bin/view/NG/Presentation
+L<http://lemonldap-ng.org/>
 
 =head1 AUTHOR
 
@@ -399,7 +399,7 @@ Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 Copyright (C) 2006, 2007, 2010 by Xavier Guimard E<lt>x.guimard@free.frE<gt>
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.8.4 or,
+it under the same terms as Perl itself, either Perl version 5.10.0 or,
 at your option, any later version of Perl 5 you may have available.
 
 =cut

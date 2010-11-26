@@ -11,7 +11,7 @@ use SOAP::Transport::HTTP;
 use base qw(SOAP::Transport::HTTP::Server);
 use bytes;
 
-our $VERSION = '0.992';
+our $VERSION = '1.0.0';
 
 ## @method protected void DESTROY()
 # Call SOAP::Trace::objects().
@@ -108,7 +108,7 @@ a L<CGI> object instead of STDIN.
 
 =head1 SEE ALSO
 
-L<http://lemonldap.objectweb.org/>, L<Lemonldap::NG::Common::CGI>
+L<http://lemonldap-ng.org/>, L<Lemonldap::NG::Common::CGI>
 
 =head1 AUTHOR
 
