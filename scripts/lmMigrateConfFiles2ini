@@ -49,7 +49,7 @@ if ( $opts{verbose} ) {
     print "\tFile apply: " . $old->{apply} . "\n";
     print "\tFile menu: " . $old->{menuxml} . "\n";
     print "\tNew ini file: " . $new . "\n";
-    print "\tPreserve: " . ($opts{preserve}?"yes":"no") . "\n\n";
+    print "\tPreserve: " . ( $opts{preserve} ? "yes" : "no" ) . "\n\n";
 }
 
 # Convert storage.conf
@@ -57,11 +57,11 @@ if ( -r $old->{storage} ) {
     print "Parsing " . $old->{storage} . "\n" if $opts{verbose};
     open F, $old->{storage};
     while (<F>) {
-    next if (/^\s*(?:#.*)?$/);
-    my ( $k, $v ) = (/^(\w+)\s*=\s*(.*)$/)
-      or quit( 3, "bad line in " . $old->{storage} . ":$_" );
-    $datas->{ +CONFSECTION }->{$k} = $v;
-    print "\t$k: $v\n" if $opts{verbose};
+        next if (/^\s*(?:#.*)?$/);
+        my ( $k, $v ) = (/^(\w+)\s*=\s*(.*)$/)
+          or quit( 3, "bad line in " . $old->{storage} . ":$_" );
+        $datas->{ +CONFSECTION }->{$k} = $v;
+        print "\t$k: $v\n" if $opts{verbose};
     }
     close F;
     print "\n" if $opts{verbose};
@@ -142,11 +142,22 @@ foreach ( ( CONFSECTION, APPLYSECTION, PORTALSECTION ) ) {
     next unless ( ref $datas->{$_} );
     $conf->AddSection($_) unless ( $conf->SectionExists($_) );
     while ( my ( $k, $v ) = each %{ $datas->{$_} } ) {
-        if ( $conf->exists( $_, $k ) ) {
-            $conf->setval( $_, $k, $v );
+
+        # Old Config::IniFiles modules does not have 'exists' subroutine
+        if ( $conf->can('exists') ) {
+            if ( $conf->exists( $_, $k ) ) {
+                $conf->setval( $_, $k, $v );
+            }
+            else {
+                $conf->newval( $_, $k, $v );
+            }
         }
         else {
-            $conf->newval( $_, $k, $v );
+
+            # Try setval, else newval
+            unless ( $conf->setval( $_, $k, $v ) ) {
+                $conf->newval( $_, $k, $v );
+            }
         }
     }
 }
@@ -158,9 +169,12 @@ else {
       or quit( 5,
         "Unable to create $new:\n\t"
           . join( "\n\t", @Config::IniFiles::errors ) );
-    unless ( $opts{preserve} ) {
-        unlink $old->{storage}, $old->{apply}, $old->{menuxml}, $old->{menudtd};
-    }
+}
+
+# Remove old files
+unless ( $opts{preserve} ) {
+    print "Remove old files\n" if $opts{verbose};
+    unlink $old->{storage}, $old->{apply}, $old->{menuxml}, $old->{menudtd};
 }
 
 # Local subroutines

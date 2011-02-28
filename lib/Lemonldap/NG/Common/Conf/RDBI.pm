@@ -15,7 +15,7 @@ sub store {
     while ( my ( $k, $v ) = each %$fields ) {
         my $tmp =
           $self->_dbh->prepare( "insert into "
-                  . $self->{dbiTable}
+              . $self->{dbiTable}
               . " (cfgNum,field,value) values (?,?,?)" );
         unless ( $tmp and $tmp->execute( $fields->{cfgNum}, $k, $v ) ) {
             $self->logError;

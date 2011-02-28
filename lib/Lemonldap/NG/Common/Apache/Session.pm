@@ -12,7 +12,7 @@ use AutoLoader 'AUTOLOAD';
 use Apache::Session;
 use base qw(Apache::Session);
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.0.2';
 
 sub _load {
     my $backend = shift;
@@ -102,9 +102,9 @@ sub get_key_from_all_sessions {
         return $backend->get_key_from_all_sessions(@_);
     }
     if ( $backend =~
-        /^Apache::Session::(?:MySQL|Postgres|Oracle|Sybase|Informix)$/ )
+        /^Apache::Session::(MySQL|Postgres|Oracle|Sybase|Informix)$/ )
     {
-        return $class->_dbiGKFAS(@_);
+        return $class->_dbiGKFAS( $1, @_ );
     }
     elsif ( $backend =~ /^Apache::Session::(?:NoSQL|Redis|Cassandra)$/ ) {
         return $class->_NoSQLGKFAS(@_);
@@ -119,9 +119,23 @@ sub get_key_from_all_sessions {
     }
 }
 
-sub _dbiGKFAS {
-    my ( $class, $args, $data ) = @_;
+sub decodeThaw64 {
     require Storable;
+    require MIME::Base64;
+    my $s = shift;
+    return Storable::thaw( MIME::Base64::decode_base64($s) );
+}
+
+sub _dbiGKFAS {
+    my ( $class, $type, $args, $data ) = @_;
+    my $unserialize;
+    require Storable;
+    if ( $type =~ /(?:MySQL)/ ) {
+        $unserialize = \&Storable::thaw;
+    }
+    else {
+        $unserialize = \&decodeThaw64;
+    }
 
     my $dbh =
       DBI->connect( $args->{DataSource}, $args->{UserName}, $args->{Password} )
@@ -131,16 +145,16 @@ sub _dbiGKFAS {
     my %res;
     while ( my @row = $sth->fetchrow_array ) {
         if ( ref($data) eq 'CODE' ) {
-            my $tmp = &$data( Storable::thaw( $row[1] ), $row[0] );
+            my $tmp = &$data( $unserialize->( $row[1] ), $row[0] );
             $res{ $row[0] } = $tmp if ( defined($tmp) );
         }
         elsif ($data) {
             $data = [$data] unless ( ref($data) );
-            my $tmp = Storable::thaw( $row[1] );
+            my $tmp = $unserialize->( $row[1] );
             $res{ $row[0] }->{$_} = $tmp->{$_} foreach (@$data);
         }
         else {
-            $res{ $row[0] } = Storable::thaw( $row[1] );
+            $res{ $row[0] } = $unserialize->( $row[1] );
         }
     }
     return \%res;
@@ -208,7 +222,7 @@ sub _PHPGKFAS {
     return \%res;
 }
 
-sub _DB_FileGKFAS {
+sub _DBFileGKFAS {
     my ( $class, $args, $data ) = @_;
     require Storable;
 
@@ -238,13 +252,11 @@ sub _DB_FileGKFAS {
 
 sub _LDAPGKFAS {
     my ( $class, $args, $data ) = @_;
-    require Storable;
 
     my $ldap = Apache::Session::Store::LDAP::ldap( { args => $args } );
     my $msg = $ldap->search(
         base   => $args->{ldapConfBase},
         filter => '(objectClass=applicationProcess)',
-        scope  => 'base',
         attrs  => [ 'cn', 'description' ],
     );
     Apache::Session::Store::LDAP->logError($msg) if ( $msg->code );
@@ -252,35 +264,33 @@ sub _LDAPGKFAS {
     foreach my $entry ( $msg->entries ) {
         my ( $k, $v ) =
           ( $entry->get_value('cn'), $entry->get_value('description') );
+        eval { $v = decodeThaw64($v); };
+        next if ($@);
         if ( ref($data) eq 'CODE' ) {
-            $res{$k} = &$data( Storable::thaw($v), $k );
+            $res{$k} = &$data( $v, $k );
         }
         elsif ($data) {
             $data = [$data] unless ( ref($data) );
-            my $tmp = Storable::thaw($v);
+            my $tmp = $v;
             $res{$k}->{$_} = $tmp->{$_} foreach (@$data);
         }
         else {
-            $res{$k} = Storable::thaw($v);
+            $res{$k} = $v;
         }
     }
     return \%res;
 }
 
 sub _NoSQLGKFAS {
-    require Redis;
-    require MIME::Base64;
-    require Storable;
     my ( $class, $args, $data ) = @_;
+    require Redis;
     die "Only Redis is supported" unless ( $args->{Driver} eq 'Redis' );
     my $redis = Redis->new(%$args);
     my @keys  = $redis->keys('*');
     my %res;
 
     foreach my $k (@keys) {
-        my $v = eval {
-            Storable::thaw( MIME::Base64::decode_base64( $redis->get($k) ) );
-        };
+        my $v = eval { decodeThaw64( $redis->get($k) ); };
         next if ($@);
         if ( ref($data) eq 'CODE' ) {
             $res{$k} = &$data( $v, $k );
