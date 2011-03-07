@@ -9,7 +9,7 @@ use strict;
 use base qw(Safe);
 use constant SAFEWRAP => ( Safe->can("wrap_code_ref") ? 1 : 0 );
 
-our $VERSION = 1.0.2;
+our $VERSION = 1.0.3;
 
 our $self;    # Safe cannot share a variable declared with my
 
@@ -52,7 +52,13 @@ sub reval {
     $e =~ s/\$date/&POSIX::strftime("%Y%m%d%H%M%S",localtime())/e;
 
     # Replace variables by session content
-    $e =~ s/\$(?!ENV)(\w+)/\$self->{p}->{sessionInfo}->{$1}/g;
+    # Manage subroutine not the same way as plain perl expressions
+    if ( $e =~ /^sub\s*{/ ) {
+        $e =~ s/\$(?!ENV)(?!self)(\w+)/\$self->{sessionInfo}->{$1}/g;
+    }
+    else {
+        $e =~ s/\$(?!ENV)(\w+)/\$self->{p}->{sessionInfo}->{$1}/g;
+    }
 
     $self->{p}->lmLog( "Evaluate expression: $e", 'debug' );
 

@@ -20,11 +20,11 @@ EOT
 }
 
 WriteMakefile(
-    NAME         => 'Lemonldap::NG::Common',
-    VERSION_FROM => 'lib/Lemonldap/NG/Common.pm',    # finds $VERSION
-    LICENSE      => 'perl',
+    NAME           => 'Lemonldap::NG::Common',
+    VERSION_FROM   => 'lib/Lemonldap/NG/Common.pm',    # finds $VERSION
+    LICENSE        => 'perl',
     BUILD_REQUIRES => { 'IO::String' => 0, },
-    PREREQ_PM    => {
+    PREREQ_PM      => {
         'Cache::Cache'     => 0,
         'CGI'              => 3.08,
         'Config::IniFiles' => 0,
@@ -35,15 +35,16 @@ WriteMakefile(
         'SOAP::Lite'       => 0,
         'Storable'         => 0,
         'XML::Simple'      => 0,
-    },                                               # e.g., Module::Name => 1.1
-    #EXE_FILES => [ 'scripts/convertConfig', ],
+    },    # e.g., Module::Name => 1.1
+          #EXE_FILES => [ 'scripts/convertConfig', ],
     (
         $] >= 5.005
         ?    ## Add these new keywords supported since 5.005
           (
             ABSTRACT_FROM =>
               'lib/Lemonldap/NG/Common.pm',    # retrieve abstract from module
-            AUTHOR => 'Xavier Guimard <x.guimard@free.fr>, Clément Oudot <clement@oodo.net>'
+            AUTHOR =>
+'Xavier Guimard <x.guimard@free.fr>, Clément Oudot <clement@oodo.net>'
           )
         : ()
     ),
