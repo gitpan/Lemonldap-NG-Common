@@ -20,7 +20,7 @@ use Config::IniFiles;
 #inherits Lemonldap::NG::Common::Conf::SOAP
 #inherits Lemonldap::NG::Common::Conf::LDAP
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.0.5';
 our $msg;
 our $iniObj;
 
@@ -240,7 +240,7 @@ sub getLocalConf {
     if ($loaddefault) {
         foreach ( $cfg->Parameters(DEFAULTSECTION) ) {
             $r->{$_} = $cfg->val( DEFAULTSECTION, $_ );
-            if ( $r->{$_} =~ /^[{\[].*[}\]]$/ ) {
+            if ( $r->{$_} =~ /^[{\[].*[}\]]$/ || $r->{$_} =~ /^sub\s*{.*}$/ ) {
                 eval "\$r->{$_} = $r->{$_}";
                 if ($@) {
                     $msg = "Warning: error in file $file: $@.";
@@ -259,7 +259,7 @@ sub getLocalConf {
     # Load section parameters
     foreach ( $cfg->Parameters($section) ) {
         $r->{$_} = $cfg->val( $section, $_ );
-        if ( $r->{$_} =~ /^[{\[].*[}\]]$/ ) {
+        if ( $r->{$_} =~ /^[{\[].*[}\]]$/ || $r->{$_} =~ /^sub\s*{.*}$/ ) {
             eval "\$r->{$_} = $r->{$_}";
             if ($@) {
                 $msg = "Warning: error in file $file: $@.";
