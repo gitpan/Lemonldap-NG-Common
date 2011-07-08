@@ -4,7 +4,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::Serializer;
 use Lemonldap::NG::Common::Conf::_DBI;
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.1.0';
 our @ISA     = qw(Lemonldap::NG::Common::Conf::_DBI);
 
 sub store {
@@ -43,7 +43,8 @@ sub load {
         $res->{ $row[1] } = $row[2];
     }
     unless ($res) {
-        $Lemonldap::NG::Common::Conf::msg .= "No configuration $cfgNum found";
+        $Lemonldap::NG::Common::Conf::msg .=
+          "No configuration $cfgNum found \n";
         return 0;
     }
     $res->{cfgNum} = $cfgNum;

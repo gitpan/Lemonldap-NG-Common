@@ -10,7 +10,7 @@ use Net::LDAP;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 use Lemonldap::NG::Common::Conf::Serializer;
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.1.0';
 
 BEGIN {
     *Lemonldap::NG::Common::Conf::ldap = \&ldap;
@@ -20,8 +20,8 @@ sub prereq {
     my $self = shift;
     foreach ( 'ldapServer', 'ldapConfBase', 'ldapBindDN', 'ldapBindPassword' ) {
         unless ( $self->{$_} ) {
-            $Lemonldap::NG::Common::Conf::msg =
-              "$_ is required in LDAP configuration type";
+            $Lemonldap::NG::Common::Conf::msg .=
+              "$_ is required in LDAP configuration type \n";
             return 0;
         }
     }
@@ -29,14 +29,24 @@ sub prereq {
 }
 
 sub available {
-    my $self   = shift;
+    my $self = shift;
+
+    unless ( $self->ldap ) {
+        return 0;
+    }
+
     my $search = $self->ldap->search(
         base   => $self->{ldapConfBase},
         filter => '(objectClass=applicationProcess)',
         scope  => 'one',
         attrs  => ['cn'],
     );
-    $self->logError($search) if ( $search->code );
+
+    if ( $search->code ) {
+        $self->logError($search);
+        return 0;
+    }
+
     my @entries = $search->entries();
     my @conf;
     foreach (@entries) {
@@ -125,6 +135,11 @@ sub unlock {
 
 sub store {
     my ( $self, $fields ) = @_;
+
+    unless ( $self->ldap ) {
+        return 0;
+    }
+
     $fields = $self->serialize($fields);
 
     my $confName = "lmConf-" . $fields->{cfgNum};
@@ -145,7 +160,11 @@ sub store {
         ]
     );
 
-    $self->logError($add) if ( $add->code );
+    if ( $add->code ) {
+        $self->logError($add);
+        return 0;
+    }
+
     $self->ldap->unbind() && delete $self->{ldap};
     $self->unlock;
     return $fields->{cfgNum};
@@ -153,6 +172,11 @@ sub store {
 
 sub load {
     my ( $self, $cfgNum, $fields ) = @_;
+
+    unless ( $self->ldap ) {
+        return;
+    }
+
     my $f;
     my $confName = "lmConf-" . $cfgNum;
     my $confDN   = "cn=$confName," . $self->{ldapConfBase};
@@ -163,7 +187,12 @@ sub load {
         scope  => 'base',
         attrs  => ['description'],
     );
-    $self->logError($search) if ( $search->code );
+
+    if ( $search->code ) {
+        $self->logError($search);
+        return;
+    }
+
     my $entry      = $search->shift_entry();
     my @confValues = $entry->get_value('description');
     foreach (@confValues) {
@@ -182,6 +211,10 @@ sub load {
 sub delete {
     my ( $self, $cfgNum ) = @_;
 
+    unless ( $self->ldap ) {
+        return 0;
+    }
+
     my $confDN = "cn=lmConf-" . $cfgNum . "," . $self->{ldapConfBase};
     my $delete = $self->ldap->delete($confDN);
     $self->ldap->unbind() && delete $self->{ldap};
@@ -191,10 +224,10 @@ sub delete {
 sub logError {
     my $self           = shift;
     my $ldap_operation = shift;
-    $Lemonldap::NG::Common::Conf::msg =
+    $Lemonldap::NG::Common::Conf::msg .=
         "LDAP error "
       . $ldap_operation->code . ": "
-      . $ldap_operation->error . "\n";
+      . $ldap_operation->error . " \n";
 }
 
 1;

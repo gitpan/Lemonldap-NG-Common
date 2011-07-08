@@ -9,7 +9,7 @@ use strict;
 use base qw(Safe);
 use constant SAFEWRAP => ( Safe->can("wrap_code_ref") ? 1 : 0 );
 
-our $VERSION = 1.0.3;
+our $VERSION = 1.1.0;
 
 our $self;    # Safe cannot share a variable declared with my
 
@@ -80,9 +80,50 @@ sub reval {
         $result = eval $e;
     }
 
+    # Catch errors
+    if ($@) {
+        $self->{p}->lmLog( "Error while evaluating the expression: $@", 'warn' );
+        return;
+    }
+
     $self->{p}->lmLog( "Evaluation result: $result", 'debug' );
 
     return $result;
+}
+
+## @method share_from(string $pkg, arrayref $vars)
+# Share variables into Safe jail
+# @param pkg Package
+# @param vars Varibales
+sub share_from {
+    local $self = shift;
+    my ( $pkg, $vars ) = splice(@_);
+
+    # If Safe jail, call parent
+    if ( $self->{p}->{useSafeJail} ) {
+        $self->SUPER::share_from( $pkg, $vars );
+    }
+
+    # Else register varibales into current package
+    # Code copied from Safe.pm
+    else {
+        no strict 'refs';
+        foreach my $arg (@$vars) {
+            my ( $var, $type );
+            $type = $1 if ( $var = $arg ) =~ s/^(\W)//;
+            for ( 1 .. 2 ) {    # assign twice to avoid any 'used once' warnings
+                *{$var} =
+                    ( !$type ) ? \&{ $pkg . "::$var" }
+                  : ( $type eq '&' ) ? \&{ $pkg . "::$var" }
+                  : ( $type eq '$' ) ? \${ $pkg . "::$var" }
+                  : ( $type eq '@' ) ? \@{ $pkg . "::$var" }
+                  : ( $type eq '%' ) ? \%{ $pkg . "::$var" }
+                  : ( $type eq '*' ) ? *{ $pkg . "::$var" }
+                  :                    undef;
+            }
+        }
+
+    }
 }
 
 1;

@@ -4,18 +4,18 @@ use strict;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 use Lemonldap::NG::Common::Conf::Serializer;
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.1.0';
 
 sub prereq {
     my $self = shift;
     unless ( $self->{dirName} ) {
-        $Lemonldap::NG::Common::Conf::msg =
-          '"dirName" is required in "File" configuration type !';
+        $Lemonldap::NG::Common::Conf::msg .=
+          '"dirName" is required in "File" configuration type ! \n';
         return 0;
     }
     unless ( -d $self->{dirName} ) {
-        $Lemonldap::NG::Common::Conf::msg =
-          "Directory \"$self->{dirName}\" does not exist !";
+        $Lemonldap::NG::Common::Conf::msg .=
+          "Directory \"$self->{dirName}\" does not exist ! \n";
         return 0;
     }
     1;
@@ -43,8 +43,8 @@ sub lock {
         return 0 if ( $self->isLocked );
     }
     unless ( open F, ">" . $self->{dirName} . "/lmConf.lock" ) {
-        $Lemonldap::NG::Common::Conf::msg =
-          "Unable to lock (" . $self->{dirName} . "/lmConf.lock)\n";
+        $Lemonldap::NG::Common::Conf::msg .=
+          "Unable to lock (" . $self->{dirName} . "/lmConf.lock) \n";
         return 0;
     }
     print F $$;
@@ -71,7 +71,7 @@ sub store {
     unless ( open FILE,
         '>' . $self->{dirName} . "/lmConf-" . $fields->{cfgNum} )
     {
-        $Lemonldap::NG::Common::Conf::msg = "Open file failed: $!";
+        $Lemonldap::NG::Common::Conf::msg .= "Open file failed: $! \n";
         $self->unlock;
         return UNKNOWN_ERROR;
     }

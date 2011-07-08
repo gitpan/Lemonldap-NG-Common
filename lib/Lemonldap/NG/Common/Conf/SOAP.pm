@@ -3,7 +3,7 @@ package Lemonldap::NG::Common::Conf::SOAP;
 use strict;
 use SOAP::Lite;
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.1.0';
 
 #parameter proxy Url of SOAP service
 #parameter proxyOptions SOAP::Lite parameters
@@ -23,8 +23,8 @@ our ( $username, $password ) = ( '', '' );
 sub prereq {
     my $self = shift;
     unless ( $self->{proxy} ) {
-        $Lemonldap::NG::Common::Conf::msg =
-          '"proxy" parameter is required in "SOAP" configuration type';
+        $Lemonldap::NG::Common::Conf::msg .=
+          "proxy parameter is required in SOAP configuration type \n";
         return 0;
     }
     1;

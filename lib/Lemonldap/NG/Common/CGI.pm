@@ -218,7 +218,14 @@ sub abort {
     my $self = shift;
     my $cgi  = CGI->new();
     my ( $t1, $t2 ) = @_;
+
+    # Default message
     $t2 ||= "See Apache's logs";
+
+    # Change \n into <br /> for HTML
+    my $t2html = $t2;
+    $t2html =~ s#\n#<br />#g;
+
     print $cgi->header( -type => 'text/html; charset=utf8', );
     print $cgi->start_html(
         -title    => $t1,
@@ -231,12 +238,16 @@ body{
 	padding:10px 50px;
 	font-family:sans-serif;
 }
+a {
+	text-decoration:none;
+	color:#fff;
+}
         '
         },
     );
-    print "<h1>$t1</h1><p>$t2</p>";
+    print "<h1>$t1</h1><p>$t2html</p>";
     print
-'<center><img alt="Lemonldap::NG" src="http://lemonldap.ow2.org/logo_lemonldap-ng.png" /></center>';
+      '<center><a href="http://lemonldap-ng.org">LemonLDAP::NG</a></center>';
     print STDERR ( ref($self) || $self ) . " error: $t1, $t2\n";
     exit;
 }

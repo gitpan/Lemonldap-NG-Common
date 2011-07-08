@@ -2,6 +2,8 @@ package Lemonldap::NG::Common::Conf::Serializer;
 
 use Data::Dumper;
 
+our $VERSION = '1.1.0';
+
 BEGIN {
     *Lemonldap::NG::Common::Conf::normalize   = \&normalize;
     *Lemonldap::NG::Common::Conf::unnormalize = \&unnormalize;
@@ -112,6 +114,7 @@ sub unserialize {
 	|logoutServices
 	|macros
 	|notificationStorageOptions
+	|persistentStorageOptions
 	|post
 	|remoteGlobalStorageOptions
 	|samlIDPMetaDataExportedAttributes

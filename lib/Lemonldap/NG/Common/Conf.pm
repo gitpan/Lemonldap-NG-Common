@@ -20,7 +20,7 @@ use Config::IniFiles;
 #inherits Lemonldap::NG::Common::Conf::SOAP
 #inherits Lemonldap::NG::Common::Conf::LDAP
 
-our $VERSION = '1.0.5';
+our $VERSION = '1.1.0';
 our $msg;
 our $iniObj;
 
@@ -70,27 +70,27 @@ sub new {
             }
         }
         unless ( $self->{type} ) {
-            $msg .= ' Error: configStorage: type is not defined.';
+            $msg .= "Error: configStorage: type is not defined.\n";
             return 0;
         }
         unless ( $self->{type} =~ /^[\w:]+$/ ) {
-            $msg .= ' Error: configStorage: type is not well formed.';
+            $msg .= "Error: configStorage: type is not well formed.\n";
         }
         $self->{type} = "Lemonldap::NG::Common::Conf::$self->{type}"
           unless $self->{type} =~ /^Lemonldap::/;
         eval "require $self->{type}";
         if ($@) {
-            $msg .= " Error: Unknown package $self->{type}.";
+            $msg .= "Error: Unknown package $self->{type}.\n";
             return 0;
         }
         return 0 unless $self->prereq;
         $self->{mdone}++;
-        $msg = "$self->{type} loaded.";
+        $msg .= "$self->{type} loaded.\n";
     }
     if ( $self->{localStorage} and not defined( $self->{refLocalStorage} ) ) {
         eval "use $self->{localStorage};";
         if ($@) {
-            $msg .= " Unable to load $self->{localStorage}: $@.";
+            $msg .= "Unable to load $self->{localStorage}: $@.\n";
         }
         else {
             $self->{refLocalStorage} =
@@ -118,7 +118,7 @@ sub saveConf {
     foreach my $k (qw(reVHosts cipher)) {
         delete( $conf->{$k} );
     }
-    $msg = "Configuration $conf->{cfgNum} stored.";
+    $msg .= "Configuration $conf->{cfgNum} stored.\n";
     my $tmp = $self->store($conf);
     return ( $self->unlock() ? $tmp : UNKNOWN_ERROR );
 }
@@ -137,25 +137,26 @@ sub getConf {
         and ref( $self->{refLocalStorage} )
         and my $res = $self->{refLocalStorage}->get('conf') )
     {
-        $msg = "get configuration from cache without verification.";
+        $msg .= "Get configuration from cache without verification.\n";
         return $res;
     }
     else {
         $args->{cfgNum} ||= $self->lastCfg;
         unless ( $args->{cfgNum} ) {
-            $msg = "No configuration available.";
+            $msg .= "No configuration available.\n";
             return 0;
         }
         my $r;
         unless ( ref( $self->{refLocalStorage} ) ) {
-            $msg = "get remote configuration (localStorage unavailable).";
-            $r   = $self->getDBConf($args);
+            $msg .= "Get remote configuration (localStorage unavailable).\n";
+            $r = $self->getDBConf($args);
         }
         else {
             eval { $r = $self->{refLocalStorage}->get('conf') };
             $msg = "Warn: $@" if ($@);
             if ( ref($r) and $r->{cfgNum} == $args->{cfgNum} ) {
-                $msg = "configuration unchanged, get configuration from cache.";
+                $msg .=
+                  "Configuration unchanged, get configuration from cache.\n";
             }
             else {
                 $r = $self->getDBConf($args);
@@ -175,8 +176,8 @@ sub getConf {
                 );
             };
             if ($@) {
-                $msg = "Bad key : $@.";
-                return 0;
+                $msg .= "Bad key: $@. \n";
+                return $r;
             }
         }
         return $r;
@@ -207,8 +208,8 @@ sub getLocalConf {
         # - Silent exit for other section requests
         unless ( -r $file ) {
             if ( $section eq CONFSECTION ) {
-                $msg =
-                  "Cannot read $file to get configuration access parameters.";
+                $msg .=
+                  "Cannot read $file to get configuration access parameters.\n";
                 return $r;
             }
             return $r;
@@ -218,19 +219,19 @@ sub getLocalConf {
         $cfg = Config::IniFiles->new( -file => $file, -allowcontinue => 1 );
 
         unless ( defined $cfg ) {
-            $msg = "Local config error: " . @Config::IniFiles::errors;
+            $msg .= "Local config error: " . @Config::IniFiles::errors . "\n";
             return $r;
         }
 
         # Check if default section exists
         unless ( $cfg->SectionExists(DEFAULTSECTION) ) {
-            $msg = "Default section (" . DEFAULTSECTION . ") is missing.";
+            $msg .= "Default section (" . DEFAULTSECTION . ") is missing. \n";
             return $r;
         }
 
         # Check if configuration section exists
         if ( $section eq CONFSECTION and !$cfg->SectionExists(CONFSECTION) ) {
-            $msg = "Configuration section (" . CONFSECTION . ") is missing.";
+            $msg .= "Configuration section (" . CONFSECTION . ") is missing.\n";
             return $r;
         }
     }
@@ -243,7 +244,7 @@ sub getLocalConf {
             if ( $r->{$_} =~ /^[{\[].*[}\]]$/ || $r->{$_} =~ /^sub\s*{.*}$/ ) {
                 eval "\$r->{$_} = $r->{$_}";
                 if ($@) {
-                    $msg = "Warning: error in file $file: $@.";
+                    $msg .= "Warning: error in file $file: $@.\n";
                     return $r;
                 }
             }
@@ -262,7 +263,7 @@ sub getLocalConf {
         if ( $r->{$_} =~ /^[{\[].*[}\]]$/ || $r->{$_} =~ /^sub\s*{.*}$/ ) {
             eval "\$r->{$_} = $r->{$_}";
             if ($@) {
-                $msg = "Warning: error in file $file: $@.";
+                $msg .= "Warning: error in file $file: $@.\n";
                 return $r;
             }
         }
@@ -277,7 +278,7 @@ sub getLocalConf {
 sub setLocalConf {
     my ( $self, $conf ) = @_;
     eval { $self->{refLocalStorage}->set( "conf", $conf ) };
-    $msg .= "Warn: $@" if ($@);
+    $msg .= "Warn: $@\n" if ($@);
 }
 
 ## @method hashRef getDBConf(hashRef args)
@@ -297,7 +298,7 @@ sub getDBConf {
           : $a[0];
     }
     my $conf = $self->load( $args->{cfgNum} );
-    $msg = "Get configuration $conf->{cfgNum}.";
+    $msg .= "Get configuration $conf->{cfgNum}.\n";
     my $re = Regexp::Assemble->new();
     foreach ( keys %{ $conf->{locationRules} } ) {
         $_ = quotemeta($_);

@@ -4,7 +4,7 @@ use strict;
 require Storable;
 use Lemonldap::NG::Common::Conf::_DBI;
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.1.0';
 our @ISA     = qw(Lemonldap::NG::Common::Conf::_DBI);
 
 sub store {
@@ -37,8 +37,8 @@ sub load {
     my $r;
     eval { $r = Storable::thaw( $row->[0] ); };
     if ($@) {
-        $Lemonldap::NG::Common::Conf::msg =
-          "Bad stored data in conf database: $@";
+        $Lemonldap::NG::Common::Conf::msg .=
+          "Bad stored data in conf database: $@ \n";
         return 0;
     }
     return $r;
