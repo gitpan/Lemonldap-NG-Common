@@ -109,6 +109,7 @@ sub unserialize {
 	|exportedHeaders
 	|exportedVars
 	|globalStorageOptions
+        |grantSessionRules
 	|groups
 	|locationRules
 	|logoutServices
@@ -116,6 +117,7 @@ sub unserialize {
 	|notificationStorageOptions
 	|persistentStorageOptions
 	|post
+        |reloadUrls
 	|remoteGlobalStorageOptions
 	|samlIDPMetaDataExportedAttributes
 	|samlIDPMetaDataOptions
@@ -124,6 +126,7 @@ sub unserialize {
 	|samlSPMetaDataOptions
 	|samlSPMetaDataXML
 	|samlStorageOptions
+        |sessionDataToRemember
 	|vhostOptions
 	)$/
             and $v ||= {} and not ref($v)

@@ -113,7 +113,7 @@ Lemonldap::NG Web-SSO configuration via SOAP.
   __PACKAGE__->init ( {
       localStorage        => "Cache::FileCache",
       localStorageOptions => {
-                'namespace'          => 'MyNamespace',
+                'namespace'          => 'lemonldap-ng',
                 'default_expires_in' => 600,
       },
       configStorage       => {
@@ -195,7 +195,7 @@ Examples :
   __PACKAGE__->init ( {
       localStorage        => "Cache::FileCache",
       localStorageOptions => {
-                'namespace'          => 'MyNamespace',
+                'namespace'          => 'lemonldap-ng',
                 'default_expires_in' => 600,
       },
       configStorage       => {
@@ -223,7 +223,7 @@ set environment variables.
   __PACKAGE__->init ( {
       localStorage        => "Cache::FileCache",
       localStorageOptions => {
-                'namespace'          => 'MyNamespace',
+                'namespace'          => 'lemonldap-ng',
                 'default_expires_in' => 600,
       },
       configStorage       => {

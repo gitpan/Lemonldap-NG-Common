@@ -82,7 +82,8 @@ sub reval {
 
     # Catch errors
     if ($@) {
-        $self->{p}->lmLog( "Error while evaluating the expression: $@", 'warn' );
+        $self->{p}
+          ->lmLog( "Error while evaluating the expression: $@", 'warn' );
         return;
     }
 

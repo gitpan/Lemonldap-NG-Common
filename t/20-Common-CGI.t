@@ -7,7 +7,7 @@
 package My::Portal;
 
 use strict;
-use Test::More tests => 10;
+use Test::More tests => 17;
 use_ok('Lemonldap::NG::Common::CGI');
 
 #our @ISA = qw('Lemonldap::NG::Common::CGI');
@@ -81,6 +81,25 @@ SKIP: {
     ok( $cgi->_sub('mySubtest') eq 'OK1', '_sub mechanism 1' );
     $cgi->{mySubtest} = sub { return 'OK2' };
     ok( $cgi->_sub('mySubtest') eq 'OK2', '_sub mechanism 2' );
+
+    # Test extract_lang
+    my $lang;
+    ok( $lang = $cgi->extract_lang(),
+        'extract_lang 0 with void "Accept-language"' );
+    ok( scalar(@$lang) == 0, 'extract_lang 1 with void "Accept-language"' );
+
+    my $cgi2;
+    $ENV{SCRIPT_NAME}          = '/test.pl';
+    $ENV{SCRIPT_FILENAME}      = 't/20-Common-CGI.t';
+    $ENV{REQUEST_METHOD}       = 'GET';
+    $ENV{REQUEST_URI}          = '/';
+    $ENV{QUERY_STRING}         = '';
+    $ENV{HTTP_ACCEPT_LANGUAGE} = 'fr,fr-fr;q=0.8,en-us;q=0.5,en;q=0.3';
+    ok( ( $cgi2 = Lemonldap::NG::Common::CGI->new() ), 'New CGI' );
+    ok( $lang = $cgi2->extract_lang(), 'extract_lang' );
+    ok( $lang->[0] eq 'fr', 'extract_lang' );
+    ok( $lang->[1] eq 'en', 'extract_lang' );
+    ok( scalar(@$lang) == 2, 'extract_lang' );
 
     # SOAP
     eval { require SOAP::Lite };

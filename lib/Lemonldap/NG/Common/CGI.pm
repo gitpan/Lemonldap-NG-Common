@@ -7,14 +7,16 @@ package Lemonldap::NG::Common::CGI;
 
 use strict;
 
+use File::Basename;
 use MIME::Base64;
 use Time::Local;
 use CGI;
 use utf8;
+use Encode;
 
 #parameter syslog Indicates syslog facility for logging user actions
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.2.0';
 
 use base qw(CGI);
 
@@ -46,6 +48,7 @@ sub new {
         $self->{_prm}->{$_} = $self->param($_);
         $self->delete($_);
     }
+    $self->{lang} = extract_lang();
     bless $self, $class;
     return $self;
 }
@@ -128,6 +131,13 @@ sub setApacheUser {
         }
     }
     $ENV{REMOTE_USER} = $user;
+}
+
+##@method string getApacheHtdocsPath()
+# Return absolute path to the htdocs directory where the current script is
+# @return path string
+sub getApacheHtdocsPath {
+    return dirname( $ENV{SCRIPT_FILENAME} || $0 );
 }
 
 ## @method void soapTest(string soapFunctions, object obj)
@@ -326,6 +336,22 @@ sub _sub {
     }
 }
 
+##@method string extract_lang
+#@return array of user's preferred languages (two letters)
+sub extract_lang {
+    my $self  = shift;
+    my @langs = split /,\s*/, ( shift || $ENV{HTTP_ACCEPT_LANGUAGE} || "" );
+    my @res   = ();
+    foreach (@langs) {
+
+        # languages are supposed to be sorted by preference
+        # only 2-letters lang tags are considered
+        my $lang = ( split /;/ )[0];
+        push @res, $lang if ( length($lang) == 2 );
+    }
+    return \@res;
+}
+
 ##@method void translate_template(string text_ref, string lang)
 # translate_template is used as an HTML::Template filter to tranlate strings in
 # the wanted language
@@ -335,12 +361,6 @@ sub _sub {
 sub translate_template {
     my $self     = shift;
     my $text_ref = shift;
-    my $lang     = shift || $ENV{HTTP_ACCEPT_LANGUAGE};
-
-    # Get the lang code (2 letters)
-    $lang = lc($lang);
-    $lang =~ s/-/_/g;
-    $lang =~ s/^(..).*$/$1/;
 
     # Decode UTF-8
     utf8::decode($$text_ref);
@@ -348,12 +368,26 @@ sub translate_template {
     # Test if a translation is available for the selected language
     # If not available, return the first translated string
     # <lang en="Please enter your credentials" fr="Merci de vous autentifier"/>
-    if ( $$text_ref =~ m/$lang=\"(.*?)\"/ ) {
-        $$text_ref =~ s/<lang.*$lang=\"(.*?)\".*?\/>/$1/gx;
+    foreach ( @{ $self->{lang} } ) {
+        if ( $$text_ref =~ m/$_=\"(.*?)\"/ ) {
+            $$text_ref =~ s/<lang.*$_=\"(.*?)\".*?\/>/$1/gx;
+            return;
+        }
     }
-    else {
-        $$text_ref =~ s/<lang\s+\w+=\"(.*?)\".*?\/>/$1/gx;
-    }
+    $$text_ref =~ s/<lang\s+\w+=\"(.*?)\".*?\/>/$1/gx;
+}
+
+##@method void session_template(string text_ref)
+# session_template is used as an HTML::Template filter to replace session info
+# by their value
+#@param text_ref reference to the string to translate
+#@return
+sub session_template {
+    my $self     = shift;
+    my $text_ref = shift;
+
+    # Replace session information
+    $$text_ref =~ s/\$(\w+)/decode("utf8",$self->{sessionInfo}->{$1})/ge;
 }
 
 ## @method private void quit()

@@ -5,7 +5,8 @@
 
 # change 'tests => 1' to 'tests => last_test_to_print';
 
-use Test::More tests => 19;
+use Test::More tests => 20;
+use Digest::MD5 qw(md5 md5_hex md5_base64);
 use strict;
 
 BEGIN {
@@ -29,6 +30,12 @@ foreach my $i ( 1 .. 17 ) {
     my $s = '';
     $s = join( '', map { chr( int( rand(94) ) + 33 ) } ( 1 .. $i ) );
     ok( $c->decrypt( $c->encrypt($s) ) eq $s,
-        "Test with $i characters string" );
+        "Test of base64 encrypting with $i characters string" );
 }
 
+my $data      = md5_hex(rand);
+my $secondKey = md5(rand);
+ok(
+    $c->decryptHex( $c->encryptHex( $data, $secondKey ), $secondKey ) eq $data,
+    "Test of hexadecimal encrypting"
+);

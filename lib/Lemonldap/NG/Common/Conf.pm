@@ -20,7 +20,7 @@ use Config::IniFiles;
 #inherits Lemonldap::NG::Common::Conf::SOAP
 #inherits Lemonldap::NG::Common::Conf::LDAP
 
-our $VERSION = '1.1.0';
+our $VERSION = '1.2.0';
 our $msg;
 our $iniObj;
 
@@ -118,8 +118,16 @@ sub saveConf {
     foreach my $k (qw(reVHosts cipher)) {
         delete( $conf->{$k} );
     }
-    $msg .= "Configuration $conf->{cfgNum} stored.\n";
+
+    # Try to store configuration
     my $tmp = $self->store($conf);
+
+    unless ( $tmp > 0 ) {
+        $msg .= "Configuration $conf->{cfgNum} not stored.\n";
+        return ( $tmp ? $tmp : UNKNOWN_ERROR );
+    }
+
+    $msg .= "Configuration $conf->{cfgNum} stored.\n";
     return ( $self->unlock() ? $tmp : UNKNOWN_ERROR );
 }
 
@@ -170,10 +178,9 @@ sub getConf {
               "Warning: key is not defined, set it in the manager !\n"
               unless ( $r->{key} );
             eval {
-                $r->{cipher} = Lemonldap::NG::Common::Crypto->new(
-                    $r->{key} || 'lemonldap-ng-key',
-                    Crypt::Rijndael::MODE_CBC()
-                );
+                $r->{cipher} =
+                  Lemonldap::NG::Common::Crypto->new( $r->{key}
+                      || 'lemonldap-ng-key' );
             };
             if ($@) {
                 $msg .= "Bad key: $@. \n";
@@ -403,7 +410,7 @@ Web-SSO configuration.
                   # To use local cache, set :
                   localStorage => "Cache::FileCache",
                   localStorageOptions = {
-                      'namespace' => 'MyNamespace',
+                      'namespace' => 'lemonldap-ng',
                       'default_expires_in' => 600,
                       'directory_umask' => '007',
                       'cache_root' => '/tmp',
