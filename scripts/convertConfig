@@ -59,7 +59,7 @@ unless ($new) {
     exit 5;
 }
 my @available;
-if ( $opts{lastest} ) {
+if ( $opts{latest} ) {
     @available = $old->lastCfg();
 }
 else {

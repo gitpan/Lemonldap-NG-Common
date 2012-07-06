@@ -20,7 +20,7 @@ use Config::IniFiles;
 #inherits Lemonldap::NG::Common::Conf::SOAP
 #inherits Lemonldap::NG::Common::Conf::LDAP
 
-our $VERSION = '1.2.0';
+our $VERSION = '1.2.1';
 our $msg;
 our $iniObj;
 
@@ -55,7 +55,7 @@ sub new {
         %$self = %{ $_[0] };
     }
     else {
-        if ( defined @_ && $#_ % 2 == 1 ) {
+        if ( (@_) && $#_ % 2 == 1 ) {
             %$self = @_;
         }
     }

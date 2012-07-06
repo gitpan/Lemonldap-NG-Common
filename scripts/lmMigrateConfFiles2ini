@@ -126,10 +126,11 @@ else {
 my $conf;
 if ( -e $new ) {
     -w $new or quit( 4, "$new is not writeable" );
-    $conf = Config::IniFiles->new( -file => $new )
-      or quit( 4,
-        "Unable to open $new:\n\t"
-          . join( "\n\t", @Config::IniFiles::errors ) );
+    $conf = Config::IniFiles->new( -file => $new, -allowcontinue => 1 )
+      or quit(
+        4,
+        "Unable to open $new:\n\t" . join( "\n\t", @Config::IniFiles::errors )
+      );
 }
 else {
     $conf = Config::IniFiles->new();
@@ -189,6 +190,9 @@ sub _parseCategory {
 
     my $catname = $category->getAttribute('name') || "Menu";
 
+    # Escape quote
+    $catname =~ s/'/\\'/;
+
     $value .= "'$catname' => { type => 'category', ";
 
     # Applications
@@ -221,6 +225,11 @@ sub _parseApplication {
     my $applogo = $application->getChildrenByTagName('logo')->string_value();
     my $appdisplay =
       $application->getChildrenByTagName('display')->string_value();
+
+    # Escape quote
+    $appid   =~ s/'/\\'/;
+    $appname =~ s/'/\\'/;
+    $appdesc =~ s/'/\\'/;
 
     # Print application items
     $value .= "'$appid' => { type => 'application', options => { ";
