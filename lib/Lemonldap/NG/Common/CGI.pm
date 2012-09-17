@@ -16,7 +16,7 @@ use Encode;
 
 #parameter syslog Indicates syslog facility for logging user actions
 
-our $VERSION = '1.2.0';
+our $VERSION = '1.2.2';
 
 use base qw(CGI);
 
@@ -339,16 +339,26 @@ sub _sub {
 ##@method string extract_lang
 #@return array of user's preferred languages (two letters)
 sub extract_lang {
-    my $self  = shift;
+    my $self = shift;
+
     my @langs = split /,\s*/, ( shift || $ENV{HTTP_ACCEPT_LANGUAGE} || "" );
-    my @res   = ();
+    my @res = ();
+
     foreach (@langs) {
 
-        # languages are supposed to be sorted by preference
-        # only 2-letters lang tags are considered
+        # Languages are supposed to be sorted by preference
         my $lang = ( split /;/ )[0];
+
+        # Take first part of lang code (part before -)
+        $lang = ( split /-/, $lang )[0];
+
+        # Go to next if lang was already added
+        next if grep( /$lang/, @res );
+
+        # Store lang only if size is 2 characters
         push @res, $lang if ( length($lang) == 2 );
     }
+
     return \@res;
 }
 

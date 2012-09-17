@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Lemonldap-NG-Common
-version:            1.2.1
+version:            1.2.2
 abstract:           Common files for Lemonldap::NG infrastructure
 author:
     - Xavier Guimard <x.guimard@free.fr>, Clément Oudot <clement@oodo.net>
@@ -23,6 +23,7 @@ requires:
     Regexp::Assemble:     0
     SOAP::Lite:           0
     Storable:             0
+    Test::Pod:            0
     XML::Simple:          0
 no_index:
     directory:

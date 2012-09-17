@@ -4,7 +4,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 use Lemonldap::NG::Common::Conf::Serializer;
 
-our $VERSION = '1.1.0';
+our $VERSION = '1.2.2';
 
 sub prereq {
     my $self = shift;
@@ -25,7 +25,7 @@ sub available {
     my $self = shift;
     opendir D, $self->{dirName};
     my @conf = readdir(D);
-    close D;
+    closedir D;
     @conf = sort { $a <=> $b } map { /lmConf-(\d+)/ ? $1 : () } @conf;
     return @conf;
 }
