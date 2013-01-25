@@ -13,10 +13,11 @@ use Time::Local;
 use CGI;
 use utf8;
 use Encode;
+use Net::CIDR::Lite;
 
 #parameter syslog Indicates syslog facility for logging user actions
 
-our $VERSION = '1.2.2';
+our $VERSION = '1.2.2_01';
 
 use base qw(CGI);
 
@@ -296,7 +297,7 @@ sub userLog {
 # @param $mess string to log
 sub userInfo {
     my ( $self, $mess ) = @_;
-    $mess = "Lemonldap::NG : $mess ($ENV{REMOTE_ADDR})";
+    $mess = "Lemonldap::NG : $mess (" . $self->ipAddr . ")";
     $self->userLog( $mess, 'info' );
 }
 
@@ -306,7 +307,7 @@ sub userInfo {
 # @param $mess string to log
 sub userNotice {
     my ( $self, $mess ) = @_;
-    $mess = "Lemonldap::NG : $mess ($ENV{REMOTE_ADDR})";
+    $mess = "Lemonldap::NG : $mess (" . $self->ipAddr . ")";
     $self->userLog( $mess, 'notice' );
 }
 
@@ -316,7 +317,7 @@ sub userNotice {
 # @param $mess string to log
 sub userError {
     my ( $self, $mess ) = @_;
-    $mess = "Lemonldap::NG : $mess ($ENV{REMOTE_ADDR})";
+    $mess = "Lemonldap::NG : $mess (" . $self->ipAddr . ")";
     $self->userLog( $mess, 'warn' );
 }
 
@@ -404,6 +405,43 @@ sub session_template {
 # Simply exit.
 sub quit {
     exit;
+}
+
+##@method string ipAddr()
+# Retrieve client IP address from remote address or X-FORWARDED-FOR header
+#@return client IP
+sub ipAddr {
+    my $self = shift;
+
+    unless ( $self->{ipAddr} ) {
+        $self->{ipAddr} = $ENV{REMOTE_ADDR};
+        if ( my $xheader = $ENV{HTTP_X_FORWARDED_FOR} ) {
+            if (   $self->{trustedProxies} =~ /\*/
+                or $self->{useXForwardedForIP} )
+            {
+                $self->{ipAddr} = $1 if ( $xheader =~ /^([^,]*)/ );
+            }
+            elsif ( $self->{trustedProxies} ) {
+                my $localIP =
+                  Net::CIDR::Lite->new("127.0.0.0/8"); # TODO: add IPv6 local IP
+                my $trustedIP =
+                  Net::CIDR::Lite->new( split /\s+/, $self->{trustedProxies} );
+                while (
+                    (
+                           $localIP->find( $self->{ipAddr} )
+                        or $trustedIP->find( $self->{ipAddr} )
+                    )
+                    and $xheader =~ s/[,\s]*([^,\s]+)$//
+                  )
+                {
+
+                    # because it is of no use to store a local IP as client IP
+                    $self->{ipAddr} = $1 unless ( $localIP->find($1) );
+                }
+            }
+        }
+    }
+    return $self->{ipAddr};
 }
 
 1;

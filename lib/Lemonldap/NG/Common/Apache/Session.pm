@@ -12,7 +12,7 @@ use AutoLoader 'AUTOLOAD';
 use Apache::Session;
 use base qw(Apache::Session);
 
-our $VERSION = '1.0.2';
+our $VERSION = '1.2.2_01';
 
 sub _load {
     my $backend = shift;
@@ -176,15 +176,24 @@ sub _FileGKFAS {
         open F, "$args->{Directory}/$f";
         my $row = join '', <F>;
         if ( ref($data) eq 'CODE' ) {
-            $res{$f} = &$data( Storable::thaw($row), $f );
+            eval { $res{$f} = &$data( Storable::thaw($row), $f ); };
+            if ($@) {
+                $res{$f} = &$data( undef, $f );
+            }
         }
         elsif ($data) {
             $data = [$data] unless ( ref($data) );
-            my $tmp = Storable::thaw($row);
-            $res{$f}->{$_} = $tmp->{$_} foreach (@$data);
+            my $tmp;
+            eval { $tmp = Storable::thaw($row); };
+            if ($@) {
+                $res{$f}->{$_} = undef foreach (@$data);
+            }
+            else {
+                $res{$f}->{$_} = $tmp->{$_} foreach (@$data);
+            }
         }
         else {
-            $res{$f} = Storable::thaw($row);
+            eval { $res{$f} = Storable::thaw($row); };
         }
     }
     return \%res;

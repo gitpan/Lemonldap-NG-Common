@@ -18,6 +18,9 @@ lib/Lemonldap/NG/Common/Conf/SAML/Metadata.pm
 lib/Lemonldap/NG/Common/Conf/Serializer.pm
 lib/Lemonldap/NG/Common/Conf/SOAP.pm
 lib/Lemonldap/NG/Common/Crypto.pm
+lib/Lemonldap/NG/Common/Notification.pm
+lib/Lemonldap/NG/Common/Notification/DBI.pm
+lib/Lemonldap/NG/Common/Notification/File.pm
 lib/Lemonldap/NG/Common/Regexp.pm
 lib/Lemonldap/NG/Common/Safe.pm
 lib/Lemonldap/NG/Common/Safelib.pm

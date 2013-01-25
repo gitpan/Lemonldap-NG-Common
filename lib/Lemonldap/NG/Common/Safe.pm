@@ -9,7 +9,7 @@ use strict;
 use base qw(Safe);
 use constant SAFEWRAP => ( Safe->can("wrap_code_ref") ? 1 : 0 );
 
-our $VERSION = 1.2.2;
+our $VERSION = '1.2.2_01';
 
 our $self;    # Safe cannot share a variable declared with my
 
@@ -24,7 +24,7 @@ sub new {
     unless ( $portal->{useSafeJail} ) {
 
         # Fake jail
-        $portal->lmLog( "Creating a fake Safe jail", 'warn' );
+        $portal->lmLog( "Creating a fake Safe jail", 'debug' );
         bless $self, $class;
     }
     else {

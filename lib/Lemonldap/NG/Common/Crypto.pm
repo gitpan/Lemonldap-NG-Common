@@ -11,9 +11,10 @@ package Lemonldap::NG::Common::Crypto;
 use strict;
 use Crypt::Rijndael;
 use MIME::Base64;
+use Digest::MD5 qw(md5);
 use bytes;
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.2.2_01';
 
 our $msg;
 
@@ -43,7 +44,7 @@ sub _getCipher {
     my ( $self, $key ) = @_;
     $key ||= "";
     $self->{ciphers}->{$key} ||=
-      Crypt::Rijndael->new( ( $self->{key} ) ^ $key, $self->{mode} );
+      Crypt::Rijndael->new( md5( $self->{key}, $key ), $self->{mode} );
     return $self->{ciphers}->{$key};
 }
 

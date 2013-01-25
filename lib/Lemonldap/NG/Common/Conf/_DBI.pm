@@ -4,7 +4,7 @@ use strict;
 use DBI;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 
-our $VERSION = '1.2.2';
+our $VERSION = '1.2.2_01';
 our @ISA     = qw(Lemonldap::NG::Common::Conf::Constants);
 our ( @EXPORT, %EXPORT_TAGS );
 

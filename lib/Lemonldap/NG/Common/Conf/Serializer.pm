@@ -2,7 +2,7 @@ package Lemonldap::NG::Common::Conf::Serializer;
 
 use Data::Dumper;
 
-our $VERSION = '1.1.0';
+our $VERSION = '1.2.2_01';
 
 BEGIN {
     *Lemonldap::NG::Common::Conf::normalize   = \&normalize;
@@ -116,6 +116,7 @@ sub unserialize {
 	|macros
 	|notificationStorageOptions
 	|persistentStorageOptions
+	|portalSkinRules
 	|post
         |reloadUrls
 	|remoteGlobalStorageOptions
