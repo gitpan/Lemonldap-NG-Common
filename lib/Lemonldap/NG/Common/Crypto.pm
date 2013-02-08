@@ -14,7 +14,7 @@ use MIME::Base64;
 use Digest::MD5 qw(md5);
 use bytes;
 
-our $VERSION = '1.2.2_01';
+our $VERSION = '1.2.3';
 
 our $msg;
 

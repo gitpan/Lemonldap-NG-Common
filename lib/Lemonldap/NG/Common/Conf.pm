@@ -12,6 +12,7 @@ no strict 'refs';
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 use Lemonldap::NG::Common::Crypto
   ;    #link protected cipher Object "cypher" in configuration hash
+use Regexp::Assemble;
 use Config::IniFiles;
 
 #inherits Lemonldap::NG::Common::Conf::File
@@ -19,7 +20,7 @@ use Config::IniFiles;
 #inherits Lemonldap::NG::Common::Conf::SOAP
 #inherits Lemonldap::NG::Common::Conf::LDAP
 
-our $VERSION = '1.2.2_01';
+our $VERSION = '1.2.3';
 our $msg;
 our $iniObj;
 
@@ -114,7 +115,9 @@ sub saveConf {
         return DATABASE_LOCKED if ( $self->isLocked() or not $self->lock() );
     }
     $conf->{cfgNum} = $last + 1 unless ( $self->{cfgNumFixed} );
-    delete $conf->{cipher};
+    foreach my $k (qw(reVHosts cipher)) {
+        delete( $conf->{$k} );
+    }
 
     # Try to store configuration
     my $tmp = $self->store($conf);
@@ -167,16 +170,22 @@ sub getConf {
                 $r = $self->getDBConf($args);
             }
         }
-        print STDERR "Warning: key is not defined, set it in the manager !\n"
-          unless ( $r->{key} );
-        eval {
-            $r->{cipher} =
-              Lemonldap::NG::Common::Crypto->new( $r->{key}
-                  || 'lemonldap-ng-key' );
-        };
-        if ($@) {
-            $msg .= "Bad key: $@. \n";
-            return $r;
+        if ( $args->{clean} ) {
+            delete $r->{reVHosts};
+        }
+        else {
+            print STDERR
+              "Warning: key is not defined, set it in the manager !\n"
+              unless ( $r->{key} );
+            eval {
+                $r->{cipher} =
+                  Lemonldap::NG::Common::Crypto->new( $r->{key}
+                      || 'lemonldap-ng-key' );
+            };
+            if ($@) {
+                $msg .= "Bad key: $@. \n";
+                return $r;
+            }
         }
 
         # Convert old option useXForwardedForIP into trustedProxies
@@ -302,6 +311,12 @@ sub getDBConf {
     }
     my $conf = $self->load( $args->{cfgNum} );
     $msg .= "Get configuration $conf->{cfgNum}.\n";
+    my $re = Regexp::Assemble->new();
+    foreach ( keys %{ $conf->{locationRules} } ) {
+        $_ = quotemeta($_);
+        $re->add($_);
+    }
+    $conf->{reVHosts} = $re->as_string;
     $self->setLocalConf($conf)
       if ( $self->{refLocalStorage} and not( $args->{noCache} ) );
     return $conf;
@@ -400,7 +415,7 @@ Web-SSO configuration.
                   # To use local cache, set :
                   localStorage => "Cache::FileCache",
                   localStorageOptions = {
-                      'namespace' => 'lemonldap-ng-config',
+                      'namespace' => 'lemonldap-ng',
                       'default_expires_in' => 600,
                       'directory_umask' => '007',
                       'cache_root' => '/tmp',
@@ -496,7 +511,17 @@ L<http://lemonldap-ng.org/>
 
 =head1 AUTHOR
 
-Xavier Guimard, E<lt>x.guimard@free.frE<gt>
+=over
+
+=item Clement Oudot, E<lt>clem.oudot@gmail.comE<gt>
+
+=item François-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
+
+=item Xavier Guimard, E<lt>x.guimard@free.frE<gt>
+
+=item Sandro Cazzaniga, E<lt>cazzaniga.sandro@gmail.comE<gt>
+
+=back
 
 =head1 BUG REPORT
 
@@ -510,10 +535,29 @@ L<http://forge.objectweb.org/project/showfiles.php?group_id=274>
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2006, 2007, 2010 by Xavier Guimard
+=over
+
+=item Copyright (C) 2008, 2009, 2010 by Xavier Guimard, E<lt>x.guimard@free.frE<gt>
+
+=item Copyright (C) 2012 by Sandro Cazzaniga, E<lt>cazzaniga.sandro@gmail.comE<gt>
+
+=item Copyright (C) 2012 by François-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
+
+=item Copyright (C) 2009, 2010, 2011, 2012, 2013 by Clement Oudot, E<lt>clem.oudot@gmail.comE<gt>
+
+=back
 
 This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.0 or,
-at your option, any later version of Perl 5 you may have available.
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
 =cut

@@ -1,29 +1,26 @@
-Lemonldap-NG-Common version 0.01
-================================
+LemonLDAP::NG
+====================
 
-Lemonldap::NG infrastructure common files
+LemonLDAP::NG is a modular Web-SSO based on Apache::Session modules.
+This is the common part of it. You can find documentation here:
+ * for administrators: http://lemonldap-ng.org/
+ * for developers: see embedded perldoc
 
-INSTALLATION
+LemonLDAP::NG is a free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2, or (at your option)
+any later version.
 
-To install this module type the following:
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
-   perl Makefile.PL
-   make
-   make test
-   make install
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see L<http://www.gnu.org/licenses/>.
 
-DEPENDENCIES
-
-This module requires these other modules and libraries:
-
-  blah blah blah
-
-COPYRIGHT AND LICENSE
-
-Copyright (C) 2008 by guimard
-
-This library is free software; you can redistribute it and/or modify
-it under the same terms as Perl itself, either Perl version 5.10.0 or,
-at your option, any later version of Perl 5 you may have available.
-
+Copyright:
+ * 2006-2013 by Xavier Guimard and Clément Oudot
+ * 2008-2011 by Thomas Chemineau
+ * 2012-2013 by François-Xavier Deltombe and Sandro Cazzaniga
 

@@ -67,6 +67,10 @@ else {
 }
 foreach (@available) {
     my $conf = $old->getConf( { cfgNum => $_ } );
+    eval {
+        delete $conf->{reVHosts};
+        delete $conf->{cipher};
+    };
     unless ($conf) {
         print STDERR
           "\nFailed to get conf $_ : $Lemonldap::NG::Common::Conf::msg\n";
