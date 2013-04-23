@@ -11,7 +11,7 @@ use Lemonldap::NG::Common::Conf::Constants;    #inherits
 use Lemonldap::NG::Common::Conf::Serializer;
 use Encode;
 
-our $VERSION = '1.2.3';
+our $VERSION = '1.2.4';
 
 BEGIN {
     *Lemonldap::NG::Common::Conf::ldap = \&ldap;
@@ -244,7 +244,6 @@ sub encodeLdapValue {
     };
     if ($@) {
         Encode::from_to( $value, "iso-8859-1", "utf8", Encode::FB_CROAK );
-        print STDERR "ENCODE VAL as $value\n";
     }
 
     return $value;
@@ -255,7 +254,6 @@ sub decodeLdapValue {
     my $value = shift;
 
     Encode::from_to( $value, "utf8", "iso-8859-1", Encode::FB_CROAK );
-    print STDERR "DECODE VAL as $value\n";
 
     return $value;
 

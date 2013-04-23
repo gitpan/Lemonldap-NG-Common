@@ -20,7 +20,7 @@ use Config::IniFiles;
 #inherits Lemonldap::NG::Common::Conf::SOAP
 #inherits Lemonldap::NG::Common::Conf::LDAP
 
-our $VERSION = '1.2.3';
+our $VERSION = '1.2.4';
 our $msg;
 our $iniObj;
 
@@ -85,7 +85,7 @@ sub new {
         }
         return 0 unless $self->prereq;
         $self->{mdone}++;
-        $msg .= "$self->{type} loaded.\n";
+        $msg = "$self->{type} loaded.\n";
     }
     if ( $self->{localStorage} and not defined( $self->{refLocalStorage} ) ) {
         eval "use $self->{localStorage};";
