@@ -110,8 +110,6 @@ SKIP: {
     ok( $lang->[1] eq 'en', 'extract_lang Android' );
     ok( scalar(@$lang) == 2, 'extract_lang Android' );
 
-
-
     # SOAP
     eval { require SOAP::Lite };
     skip "SOAP::Lite is not installed, so CGI SOAP functions will not work", 3

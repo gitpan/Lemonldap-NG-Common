@@ -71,6 +71,35 @@ sub searchOn {
     return \%res;
 }
 
+sub searchOnExpr {
+    my ( $class, $args, $selectField, $value, @fields ) = splice @_;
+    my $backend = $args->{backend};
+    _load($backend);
+    if ( $backend->can('searchOnExpr') ) {
+        return $backend->searchOnExpr( $args, $selectField, $value, @fields );
+    }
+    $value = quotemeta($value);
+    $value =~ s/\\\*/\.\*/g;
+    $value = qr/^$value$/;
+    my %res = ();
+    $class->get_key_from_all_sessions(
+        $args,
+        sub {
+            my $entry = shift;
+            my $id    = shift;
+            return undef unless ( $entry->{$selectField} =~ $value );
+            if (@fields) {
+                $res{$id}->{$_} = $entry->{$_} foreach (@fields);
+            }
+            else {
+                $res{$id} = $entry;
+            }
+            undef;
+        }
+    );
+    return \%res;
+}
+
 sub searchLt {
     my ( $class, $args, $selectField, $value, @fields ) = splice @_;
     my %res = ();

@@ -11,7 +11,7 @@ use Lemonldap::NG::Common::Conf::Constants;    #inherits
 use Lemonldap::NG::Common::Conf::Serializer;
 use Encode;
 
-our $VERSION = '1.2.4';
+our $VERSION = '1.2.5';
 
 BEGIN {
     *Lemonldap::NG::Common::Conf::ldap = \&ldap;
@@ -91,6 +91,11 @@ sub ldap {
         onerror => undef,
         ( $self->{ldapPort} ? ( port => $self->{ldapPort} ) : () ),
     );
+
+    unless ($ldap) {
+        $Lemonldap::NG::Common::Conf::msg .= "$@\n";
+        return;
+    }
 
     # Start TLS if needed
     if ($useTls) {

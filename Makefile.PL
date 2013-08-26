@@ -22,7 +22,7 @@ EOT
 WriteMakefile(
     NAME           => 'Lemonldap::NG::Common',
     VERSION_FROM   => 'lib/Lemonldap/NG/Common.pm',    # finds $VERSION
-    LICENSE        => 'perl',
+    LICENSE        => 'gpl',
     BUILD_REQUIRES => {
         'IO::String' => 0,
         'Net::LDAP'  => 0,
