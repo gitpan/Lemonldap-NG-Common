@@ -12,7 +12,6 @@ no strict 'refs';
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 use Lemonldap::NG::Common::Crypto
   ;    #link protected cipher Object "cypher" in configuration hash
-use Regexp::Assemble;
 use Config::IniFiles;
 
 #inherits Lemonldap::NG::Common::Conf::File
@@ -20,7 +19,7 @@ use Config::IniFiles;
 #inherits Lemonldap::NG::Common::Conf::SOAP
 #inherits Lemonldap::NG::Common::Conf::LDAP
 
-our $VERSION = '1.2.4';
+our $VERSION = '1.3.0';
 our $msg;
 our $iniObj;
 
@@ -115,9 +114,7 @@ sub saveConf {
         return DATABASE_LOCKED if ( $self->isLocked() or not $self->lock() );
     }
     $conf->{cfgNum} = $last + 1 unless ( $self->{cfgNumFixed} );
-    foreach my $k (qw(reVHosts cipher)) {
-        delete( $conf->{$k} );
-    }
+    delete $conf->{cipher};
 
     # Try to store configuration
     my $tmp = $self->store($conf);
@@ -141,7 +138,7 @@ sub saveConf {
 # @return Lemonldap::NG configuration
 sub getConf {
     my ( $self, $args ) = @_;
-    if (    $args->{'local'}
+    if (    $args->{local}
         and ref( $self->{refLocalStorage} )
         and my $res = $self->{refLocalStorage}->get('conf') )
     {
@@ -170,26 +167,22 @@ sub getConf {
                 $r = $self->getDBConf($args);
             }
         }
-        if ( $args->{clean} ) {
-            delete $r->{reVHosts};
-        }
-        else {
-            print STDERR
-              "Warning: key is not defined, set it in the manager !\n"
-              unless ( $r->{key} );
-            eval {
-                $r->{cipher} =
-                  Lemonldap::NG::Common::Crypto->new( $r->{key}
-                      || 'lemonldap-ng-key' );
-            };
-            if ($@) {
-                $msg .= "Bad key: $@. \n";
-                return $r;
-            }
+        print STDERR "Warning: key is not defined, set it in the manager !\n"
+          unless ( $r->{key} );
+        eval {
+            $r->{cipher} =
+              Lemonldap::NG::Common::Crypto->new( $r->{key}
+                  || 'lemonldap-ng-key' );
+        };
+        if ($@) {
+            $msg .= "Bad key: $@. \n";
+            return $r;
         }
 
         # Convert old option useXForwardedForIP into trustedProxies
-        if ( $r->{useXForwardedForIP} == 1 ) {
+        if ( defined $r->{useXForwardedForIP}
+            and $r->{useXForwardedForIP} == 1 )
+        {
             $r->{trustedProxies} = '*';
         }
         return $r;
@@ -311,12 +304,6 @@ sub getDBConf {
     }
     my $conf = $self->load( $args->{cfgNum} );
     $msg .= "Get configuration $conf->{cfgNum}.\n";
-    my $re = Regexp::Assemble->new();
-    foreach ( keys %{ $conf->{locationRules} } ) {
-        $_ = quotemeta($_);
-        $re->add($_);
-    }
-    $conf->{reVHosts} = $re->as_string;
     $self->setLocalConf($conf)
       if ( $self->{refLocalStorage} and not( $args->{noCache} ) );
     return $conf;
@@ -415,7 +402,7 @@ Web-SSO configuration.
                   # To use local cache, set :
                   localStorage => "Cache::FileCache",
                   localStorageOptions = {
-                      'namespace' => 'lemonldap-ng',
+                      'namespace' => 'lemonldap-ng-config',
                       'default_expires_in' => 600,
                       'directory_umask' => '007',
                       'cache_root' => '/tmp',
@@ -515,7 +502,7 @@ L<http://lemonldap-ng.org/>
 
 =item Clement Oudot, E<lt>clem.oudot@gmail.comE<gt>
 
-=item François-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
+=item FranÃ§ois-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
 
 =item Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 
@@ -541,7 +528,7 @@ L<http://forge.objectweb.org/project/showfiles.php?group_id=274>
 
 =item Copyright (C) 2012 by Sandro Cazzaniga, E<lt>cazzaniga.sandro@gmail.comE<gt>
 
-=item Copyright (C) 2012 by François-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
+=item Copyright (C) 2012 by FranÃ§ois-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
 
 =item Copyright (C) 2009, 2010, 2011, 2012, 2013 by Clement Oudot, E<lt>clem.oudot@gmail.comE<gt>
 

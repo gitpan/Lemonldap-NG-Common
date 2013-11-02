@@ -29,7 +29,8 @@ sub load {
     my ( $self, $cfgNum, $fields ) = @_;
     $fields = $fields ? join( ",", @$fields ) : '*';
     my $row = $self->_dbh->selectrow_arrayref(
-        "SELECT data from " . $self->{dbiTable} . " WHERE cfgNum=$cfgNum" );
+        "SELECT data from " . $self->{dbiTable} . " WHERE cfgNum=?",
+        {}, $cfgNum );
     unless ($row) {
         $self->logError;
         return 0;

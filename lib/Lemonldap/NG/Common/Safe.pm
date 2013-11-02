@@ -24,7 +24,7 @@ sub new {
     unless ( $portal->{useSafeJail} ) {
 
         # Fake jail
-        $portal->lmLog( "Creating a fake Safe jail", 'warn' );
+        $portal->lmLog( "Creating a fake Safe jail", 'debug' );
         bless $self, $class;
     }
     else {

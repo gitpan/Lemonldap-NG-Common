@@ -18,8 +18,8 @@ use Net::CIDR::Lite;
 #parameter syslog Indicates syslog facility for logging user actions
 
 our $VERSION = '1.2.3';
-
-use base qw(CGI);
+our $_SUPER;
+our @ISA;
 
 BEGIN {
     if ( exists $ENV{MOD_PERL} ) {
@@ -33,6 +33,18 @@ BEGIN {
     else {
         eval 'use constant MP => 0;';
     }
+    $_SUPER = 'CGI';
+    @ISA    = ('CGI');
+}
+
+sub import {
+    my $pkg = shift;
+    if ( $pkg eq __PACKAGE__ and @_ and $_[0] eq "fastcgi" ) {
+        eval 'use CGI::Fast';
+        die($@) if ($@);
+        unshift @ISA, 'CGI::Fast';
+        $_SUPER = 'CGI::Fast';
+    }
 }
 
 ## @cmethod Lemonldap::NG::Common::CGI new(@p)
@@ -42,7 +54,7 @@ BEGIN {
 # @return new Lemonldap::NG::Common::CGI object
 sub new {
     my $class = shift;
-    my $self  = CGI->new(@_);
+    my $self = $_SUPER->new(@_) or return undef;
     $self->{_prm} = {};
     my @tmp = $self->param();
     foreach (@tmp) {
@@ -209,7 +221,7 @@ sub header_public {
             $ref = timegm( $6, $5, $4, $1, $m, $3 );
             if ( $ref == $date ) {
                 print $self->SUPER::header( -status => '304 Not Modified', @_ );
-                exit;
+                $self->quit();
             }
         }
     }
@@ -237,7 +249,7 @@ sub abort {
     my $t2html = $t2;
     $t2html =~ s#\n#<br />#g;
 
-    print $cgi->header( -type => 'text/html; charset=utf8', );
+    print $cgi->header( -type => 'text/html; charset=utf-8', );
     print $cgi->start_html(
         -title    => $t1,
         -encoding => 'utf8',
@@ -260,7 +272,7 @@ a {
     print
       '<center><a href="http://lemonldap-ng.org">LemonLDAP::NG</a></center>';
     print STDERR ( ref($self) || $self ) . " error: $t1, $t2\n";
-    exit;
+    $self->quit();
 }
 
 ##@method private void startSyslog()
@@ -374,7 +386,7 @@ sub translate_template {
     my $text_ref = shift;
 
     # Decode UTF-8
-    utf8::decode($$text_ref);
+    utf8::decode($$text_ref) unless ( $ENV{FCGI_ROLE} );
 
     # Test if a translation is available for the selected language
     # If not available, return the first translated string
@@ -404,7 +416,13 @@ sub session_template {
 ## @method private void quit()
 # Simply exit.
 sub quit {
-    exit;
+    my $self = shift;
+    if ( $_SUPER eq 'CGI::Fast' ) {
+        next LMAUTH;
+    }
+    else {
+        exit;
+    }
 }
 
 ##@method string ipAddr()
@@ -489,7 +507,7 @@ L<http://lemonldap-ng.org/>
 
 =item Clement Oudot, E<lt>clem.oudot@gmail.comE<gt>
 
-=item François-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
+=item FranÃ§ois-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
 
 =item Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 
@@ -511,7 +529,7 @@ L<http://forge.objectweb.org/project/showfiles.php?group_id=274>
 
 =item Copyright (C) 2008, 2009, 2010 by Xavier Guimard, E<lt>x.guimard@free.frE<gt>
 
-=item Copyright (C) 2012, 2013 by François-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
+=item Copyright (C) 2012, 2013 by FranÃ§ois-Xavier Deltombe, E<lt>fxdeltombe@gmail.com.E<gt>
 
 =item Copyright (C) 2010, 2011, 2012 by Clement Oudot, E<lt>clem.oudot@gmail.comE<gt>
 

@@ -72,8 +72,6 @@ sub lock {
         return 1;
     }
     else {
-
-        # TODO
         return 1;
     }
 }
@@ -92,8 +90,6 @@ sub isLocked {
         return 0;
     }
     else {
-
-        # TODO
         return 0;
     }
 }
@@ -112,16 +108,14 @@ sub unlock {
         return 1;
     }
     else {
-
-        # TODO
         return 1;
     }
 }
 
 sub delete {
     my ( $self, $cfgNum ) = @_;
-    $self->_dbh->do(
-        "DELETE from " . $self->{dbiTable} . " WHERE cfgNum=$cfgNum" );
+    $self->_dbh->do( "DELETE from " . $self->{dbiTable} . " WHERE cfgNum=?",
+        {}, $cfgNum );
 }
 
 sub logError {

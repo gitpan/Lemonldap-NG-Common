@@ -33,7 +33,8 @@ sub load {
     my ( $self, $cfgNum, $fields ) = @_;
     $fields = $fields ? join( ",", @$fields ) : '*';
     my $row = $self->_dbh->selectrow_hashref(
-        "SELECT $fields from " . $self->{dbiTable} . " WHERE cfgNum=$cfgNum" );
+        "SELECT $fields from " . $self->{dbiTable} . " WHERE cfgNum=?",
+        {}, $cfgNum );
     unless ($row) {
         $self->logError;
         return 0;

@@ -12,12 +12,17 @@ lib/Lemonldap/NG/Common/Conf/CDBI.pm
 lib/Lemonldap/NG/Common/Conf/Constants.pm
 lib/Lemonldap/NG/Common/Conf/DBI.pm
 lib/Lemonldap/NG/Common/Conf/File.pm
+lib/Lemonldap/NG/Common/Conf/JSONFile.pm
 lib/Lemonldap/NG/Common/Conf/LDAP.pm
 lib/Lemonldap/NG/Common/Conf/RDBI.pm
 lib/Lemonldap/NG/Common/Conf/SAML/Metadata.pm
 lib/Lemonldap/NG/Common/Conf/Serializer.pm
 lib/Lemonldap/NG/Common/Conf/SOAP.pm
 lib/Lemonldap/NG/Common/Crypto.pm
+lib/Lemonldap/NG/Common/Notification.pm
+lib/Lemonldap/NG/Common/Notification/DBI.pm
+lib/Lemonldap/NG/Common/Notification/File.pm
+lib/Lemonldap/NG/Common/Notification/LDAP.pm
 lib/Lemonldap/NG/Common/Regexp.pm
 lib/Lemonldap/NG/Common/Safe.pm
 lib/Lemonldap/NG/Common/Safelib.pm
@@ -43,3 +48,4 @@ tools/apache-session-mysql.sql
 tools/lmConfig.CDBI.mysql
 tools/lmConfig.RDBI.mysql
 tools/sso.schema
+META.json                                Module JSON meta-data (added by MakeMaker)

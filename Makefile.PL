@@ -30,11 +30,12 @@ WriteMakefile(
     },
     META_MERGE => {
         'recommends' => {
-            'HTML::Template' => 0,
-            'HTTP::Message'  => 0,
-            'Net::LDAP'      => 0,
-            'XML::Simple'    => 0,
-            'XML::LibXML'    => 0,
+            'Apache::Session::Browseable' => 0,
+            'HTML::Template'              => 0,
+            'HTTP::Message'               => 0,
+            'Net::LDAP'                   => 0,
+            'XML::Simple'                 => 0,
+            'XML::LibXML'                 => 0,
         },
     },
     PREREQ_PM => {
@@ -48,7 +49,6 @@ WriteMakefile(
         'DBI'                  => 0,
         'File::Basename'       => 0,
         'Net::CIDR::Lite'      => 0,
-        'Regexp::Assemble'     => 0,
         'SOAP::Lite'           => 0,
         'Storable'             => 0,
     },    # e.g., Module::Name => 1.1

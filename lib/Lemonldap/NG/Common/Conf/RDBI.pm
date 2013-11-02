@@ -36,8 +36,8 @@ sub load {
     my $sth =
       $self->_dbh->prepare( "SELECT cfgNum,field,value from "
           . $self->{dbiTable}
-          . " WHERE cfgNum=$cfgNum" );
-    $sth->execute();
+          . " WHERE cfgNum=?" );
+    $sth->execute($cfgNum);
     my ( $res, @row );
     while ( @row = $sth->fetchrow_array ) {
         $res->{ $row[1] } = $row[2];
