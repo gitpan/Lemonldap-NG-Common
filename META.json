@@ -4,7 +4,7 @@
       "Xavier Guimard <x.guimard@free.fr>, Clément Oudot <clement@oodo.net>"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "ExtUtils::MakeMaker version 6.78, CPAN::Meta::Converter version 2.120351",
+   "generated_by" : "ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.132830",
    "license" : [
       "open_source"
    ],
@@ -24,7 +24,8 @@
          "requires" : {
             "IO::String" : "0",
             "Net::LDAP" : "0",
-            "Test::Pod" : "1"
+            "Test::Pod" : "1",
+            "XML::Simple" : "0"
          }
       },
       "configure" : {
@@ -57,6 +58,6 @@
          }
       }
    },
-   "release_status" : "stable",
-   "version" : "v1.3.0"
+   "release_status" : "testing",
+   "version" : "v1.3.0_01"
 }
