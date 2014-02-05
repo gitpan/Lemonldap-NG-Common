@@ -48,4 +48,3 @@ tools/apache-session-mysql.sql
 tools/lmConfig.CDBI.mysql
 tools/lmConfig.RDBI.mysql
 tools/sso.schema
-META.json                                Module JSON meta-data (added by MakeMaker)
