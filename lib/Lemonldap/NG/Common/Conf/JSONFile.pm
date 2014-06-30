@@ -3,7 +3,7 @@ package Lemonldap::NG::Common::Conf::JSONFile;
 use strict;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 
-our $VERSION = '1.3.0';
+our $VERSION = '1.4.0';
 our $initDone;
 
 sub prereq {
@@ -84,7 +84,6 @@ sub store {
     print FILE JSON::Any->objToJson($fields);
     close FILE;
     umask($mask);
-    $self->unlock;
     return $fields->{cfgNum};
 }
 

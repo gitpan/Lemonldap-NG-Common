@@ -14,7 +14,7 @@ use MIME::Base64;
 use Digest::MD5 qw(md5);
 use bytes;
 
-our $VERSION = '1.2.3';
+our $VERSION = '1.4.0';
 
 our $msg;
 
@@ -80,6 +80,7 @@ sub decrypt {
     $data =~ s/%2B/\+/ig;
     $data =~ s/%2F/\//ig;
     $data =~ s/%3D/=/ig;
+    $data =~ s/%0A/\n/ig;
     eval { $data = $self->_getCipher->decrypt( decode_base64($data) ); };
     if ($@) {
         $msg = "Crypt::Rijndael error : $@";

@@ -117,7 +117,7 @@ sub delete {
     $ts[4]++;
     return _modify(
         $self,
-        '(&(objectClass=applicationProcess)(description={uid}' 
+        '(&(objectClass=applicationProcess)(description={uid}'
           . $u
           . ')(description={ref}'
           . $r
@@ -145,7 +145,7 @@ sub purge {
     my $clause;
     $clause = '(description={done}*)' unless ($force);
     return _delete( $self,
-            '(&(objectClass=applicationProcess)(description={uid}' 
+            '(&(objectClass=applicationProcess)(description={uid}'
           . $u
           . ')(description={ref}'
           . $r

@@ -11,11 +11,12 @@ use Lemonldap::NG::Portal::SharedConf;
 use XML::LibXML;
 use XML::LibXSLT;
 use CGI::Cookie;
+use Scalar::Util 'weaken';
 
 #inherits Lemonldap::NG::Common::Notification::DBI
 #inherits Lemonldap::NG::Common::Notification::File
 
-our $VERSION = '1.3.0';
+our $VERSION = '1.4.0';
 our ( $msg, $parser );
 
 ## @cmethod Lemonldap::NG::Common::Notification new(hashref storage)
@@ -30,6 +31,7 @@ sub new {
         $msg = "p=>portal is required";
         return 0;
     }
+    weaken $self->{p};
     my $type = $self->{type};
     $self->{type} = "Lemonldap::NG::Common::Notification::$self->{type}"
       unless ( $self->{type} =~ /::/ );

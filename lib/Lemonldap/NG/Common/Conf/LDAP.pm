@@ -11,7 +11,7 @@ use Lemonldap::NG::Common::Conf::Constants;    #inherits
 use Lemonldap::NG::Common::Conf::Serializer;
 use Encode;
 
-our $VERSION = '1.2.5';
+our $VERSION = '1.4.0';
 
 BEGIN {
     *Lemonldap::NG::Common::Conf::ldap = \&ldap;
@@ -173,7 +173,6 @@ sub store {
     }
 
     $self->ldap->unbind() && delete $self->{ldap};
-    $self->unlock;
     return $fields->{cfgNum};
 }
 

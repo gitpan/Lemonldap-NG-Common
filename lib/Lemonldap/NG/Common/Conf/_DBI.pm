@@ -4,7 +4,7 @@ use strict;
 use DBI;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 
-our $VERSION = '1.2.2';
+our $VERSION = '1.4.0';
 our @ISA     = qw(Lemonldap::NG::Common::Conf::Constants);
 our ( @EXPORT, %EXPORT_TAGS );
 
@@ -55,61 +55,34 @@ sub _dbh {
     $self->{dbiTable} ||= "lmConfig";
     return $self->{_dbh} if ( $self->{_dbh} and $self->{_dbh}->ping );
     return DBI->connect_cached( $self->{dbiChain}, $self->{dbiUser},
-        $self->{dbiPassword}, { RaiseError => 1, AutoCommit => 0, } );
+        $self->{dbiPassword}, { RaiseError => 1, AutoCommit => 1, } );
 }
 
 sub lock {
     my $self = shift;
-    my $sth;
-    if ( $self->{dbiChain} =~ /mysql/i ) {
-        eval {
-            $sth =
-              $self->dbh->prepare_cached( q{SELECT GET_LOCK(?, 5)}, {}, 1 );
-            $sth->execute('lmconf');
-            my @row = $sth->fetchrow_array;
-            return $row[0] || 0;
-        };
-        return 1;
+    if ( $self->{dbiChain} =~ /^dbi:mysql:/i ) {
+        my @row = $self->_dbh->selectrow_array("SELECT GET_LOCK('lmconf', 0)");
+        return $row[0] || 0;
     }
-    else {
-        return 1;
-    }
+    return 1;
 }
 
 sub isLocked {
     my $self = shift;
-    my $sth;
     if ( $self->{dbiChain} =~ /^dbi:mysql:/i ) {
-        eval {
-            $sth =
-              $self->_dbh->prepare_cached( q{SELECT IS_FREE_LOCK(?)}, {}, 1 );
-            $sth->execute('lmconf');
-            my @row = $sth->fetchrow_array;
-            return $row[0] ? 0 : 1;
-        };
-        return 0;
+        my @row = $self->_dbh->selectrow_array("SELECT IS_FREE_LOCK('lmconf')");
+        return $row[0] ? 0 : 1;
     }
-    else {
-        return 0;
-    }
+    return 0;
 }
 
 sub unlock {
     my $self = shift;
-    my $sth;
     if ( $self->{dbiChain} =~ /^dbi:mysql:/i ) {
-        eval {
-            $sth =
-              $self->_dbh->prepare_cached( q{SELECT RELEASE_LOCK(?)}, {}, 1 );
-            $sth->execute('lmconf');
-            my @row = $sth->fetchrow_array;
-            return $row[0] || 0;
-        };
-        return 1;
+        my @row = $self->_dbh->selectrow_array("SELECT RELEASE_LOCK('lmconf')");
+        return $row[0] || 0;
     }
-    else {
-        return 1;
-    }
+    return 1;
 }
 
 sub delete {

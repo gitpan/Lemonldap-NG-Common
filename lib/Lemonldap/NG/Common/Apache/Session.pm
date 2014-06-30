@@ -11,8 +11,9 @@ use strict;
 use AutoLoader 'AUTOLOAD';
 use Apache::Session;
 use base qw(Apache::Session);
+use Lemonldap::NG::Common::Apache::Session::Store;
 
-our $VERSION = '1.2.3';
+our $VERSION = '1.4.0';
 
 sub _load {
     my $backend = shift;
@@ -31,9 +32,23 @@ sub populate {
         no strict 'refs';
         $self = $self->$backend(@_);
     }
+    if ( $self->{args}->{generateModule} ) {
+        my $generate = $self->{args}->{generateModule};
+        eval "require $generate";
+        die $@ if ($@);
+        $self->{generate} = \&{ $generate . "::generate" };
+        $self->{validate} = \&{ $generate . "::validate" };
+    }
     if ( $self->{args}->{setId} ) {
         $self->{generate} = \&setId;
         $self->{validate} = sub { 1 };
+    }
+
+    # If cache is configured, use our specific object store module
+    if ( $self->{args}->{localStorage} ) {
+        $self->{args}->{object_store} = $self->{object_store};
+        $self->{object_store} =
+          Lemonldap::NG::Common::Apache::Session::Store->new($self);
     }
     return $self;
 }

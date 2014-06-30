@@ -4,7 +4,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::Serializer;
 use Lemonldap::NG::Common::Conf::_DBI;
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.4.0';
 our @ISA     = qw(Lemonldap::NG::Common::Conf::_DBI);
 
 sub store {
@@ -23,9 +23,6 @@ sub store {
         return UNKNOWN_ERROR;
     }
     eval { $self->dbh->do("COMMIT"); };
-    unless ( $self->unlock ) {
-        $self->logError;
-    }
     return $fields->{cfgNum};
 }
 

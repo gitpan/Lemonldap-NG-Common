@@ -2,7 +2,7 @@ package Lemonldap::NG::Common::Conf::Serializer;
 
 use Data::Dumper;
 
-our $VERSION = '1.2.3';
+our $VERSION = '1.4.0';
 
 BEGIN {
     *Lemonldap::NG::Common::Conf::normalize   = \&normalize;
@@ -104,21 +104,29 @@ sub unserialize {
             $k =~ /^(?x:
 	applicationList
 	|authChoiceModules
+	|captchaStorageOptions
 	|CAS_proxiedServices
 	|casStorageOptions
+	|dbiExportedVars
+	|demoExportedVars
 	|exportedHeaders
 	|exportedVars
+	|facebookExportedVars
 	|globalStorageOptions
-        |grantSessionRules
+	|googleExportedVars
+	|grantSessionRules
 	|groups
+	|ldapExportedVars
+	|localSessionStorageOptions
 	|locationRules
 	|logoutServices
 	|macros
 	|notificationStorageOptions
+	|openIdExportedVars
 	|persistentStorageOptions
 	|portalSkinRules
 	|post
-        |reloadUrls
+	|reloadUrls
 	|remoteGlobalStorageOptions
 	|samlIDPMetaDataExportedAttributes
 	|samlIDPMetaDataOptions
@@ -127,8 +135,10 @@ sub unserialize {
 	|samlSPMetaDataOptions
 	|samlSPMetaDataXML
 	|samlStorageOptions
-        |sessionDataToRemember
+	|sessionDataToRemember
+	|slaveExportedVars
 	|vhostOptions
+	|webIDExportedVars
 	)$/
             and $v ||= {} and not ref($v)
           )

@@ -3,7 +3,7 @@ package Lemonldap::NG::Common::Conf::SOAP;
 use strict;
 use SOAP::Lite;
 
-our $VERSION = '1.1.0';
+our $VERSION = '1.4.0';
 
 #parameter proxy Url of SOAP service
 #parameter proxyOptions SOAP::Lite parameters
@@ -64,20 +64,18 @@ sub lastCfg {
     return $self->_soapCall( 'lastCfg', @_ );
 }
 
+# lock and unlock must not be requested by the SOAP client, since
+# they will be done by the SOAP server when storing the config
 sub lock {
-    my $self = shift;
-    return $self->_soapCall( 'lock', @_ );
+    return 1;
 }
 
-# unlock is not needed here since real unlock is called by store
-#sub unlock {
-#    my $self = shift;
-#    return $self->_soapCall( 'unlock', @_ );
-#}
+sub unlock {
+    return 1;
+}
 
 sub isLocked {
-    my $self = shift;
-    return $self->_soapCall( 'isLocked', @_ );
+    return 1;
 }
 
 sub store {

@@ -4,20 +4,30 @@ use strict;
 require Storable;
 use Lemonldap::NG::Common::Conf::_DBI;
 
-our $VERSION = '1.1.0';
+our $VERSION = '1.4.0';
 our @ISA     = qw(Lemonldap::NG::Common::Conf::_DBI);
 
 sub store {
     my ( $self, $fields ) = @_;
     my $cfgNum = $fields->{cfgNum};
+    my $req;
+    my $lastCfg = $self->lastCfg;
+
     $fields = Storable::nfreeze($fields);
-    my $tmp = $self->_dbh->prepare(
-        "insert into $self->{dbiTable} (cfgNum,data) values (?,?)");
-    unless ($tmp) {
+
+    if ( $lastCfg == $cfgNum ) {
+        $req = $self->_dbh->prepare(
+            "UPDATE $self->{dbiTable} SET data=? WHERE cfgNum=?");
+    }
+    else {
+        $req = $self->_dbh->prepare(
+            "INSERT INTO $self->{dbiTable} (data,cfgNum) VALUES (?,?)");
+    }
+    unless ($req) {
         $self->logError;
         return UNKNOWN_ERROR;
     }
-    unless ( $tmp->execute( $cfgNum, $fields ) ) {
+    unless ( $req->execute( $fields, $cfgNum ) ) {
         $self->logError;
         return UNKNOWN_ERROR;
     }

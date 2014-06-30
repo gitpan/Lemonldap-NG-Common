@@ -411,7 +411,7 @@ sub getValue {
     my ( $self, $key, $conf ) = splice @_;
 
     # Get portal value
-    my $portal = $conf->{portal} || "http://auth.example.com";
+    my $portal = $conf->{portal} || "http://auth.example.com/";
     $portal =~ s/\/$//;
 
     # Try to get value for the given key in configuraiton

@@ -4,30 +4,49 @@ use strict;
 use Lemonldap::NG::Common::Conf::Serializer;
 use Lemonldap::NG::Common::Conf::_DBI;
 
-our $VERSION = '1.1.0';
+our $VERSION = '1.4.0';
 our @ISA     = qw(Lemonldap::NG::Common::Conf::_DBI);
 
 sub store {
     my ( $self, $fields ) = @_;
     $self->{noQuotes} = 1;
     $fields = $self->serialize($fields);
-    my $errors = 0;
+
+    my $req;
+    my $lastCfg = $self->lastCfg;
+
+    if ( $lastCfg == $fields->{cfgNum} ) {
+        $req = $self->_dbh->prepare(
+"UPDATE $self->{dbiTable} SET field=?, value=? WHERE cfgNum=? AND field=?"
+        );
+
+    }
+    else {
+        $req = $self->_dbh->prepare(
+            "INSERT INTO $self->{dbiTable} (cfgNum,field,value) VALUES (?,?,?)"
+        );
+    }
+    unless ($req) {
+        $self->logError;
+        return UNKNOWN_ERROR;
+    }
+    $self->_dbh->{AutoCommit} = 0;
     while ( my ( $k, $v ) = each %$fields ) {
-        my $tmp =
-          $self->_dbh->prepare( "insert into "
-              . $self->{dbiTable}
-              . " (cfgNum,field,value) values (?,?,?)" );
-        unless ( $tmp and $tmp->execute( $fields->{cfgNum}, $k, $v ) ) {
+        my @execValues;
+        if ( $lastCfg == $fields->{cfgNum} ) {
+            @execValues = ( $k, $v, $fields->{cfgNum}, $k );
+        }
+        else { @execValues = ( $fields->{cfgNum}, $k, $v ); }
+        unless ( $req->execute(@execValues) ) {
             $self->logError;
-            $errors++;
-            last;
+            $self->_dbh->do("ROLLBACK");
+            $self->_dbh->{AutoCommit} = 1;
+            return UNKNOWN_ERROR;
         }
     }
-    eval { $errors ? $self->_dbh->do("ROLLBACK") : $self->_dbh->do("COMMIT"); };
-    unless ( $self->unlock ) {
-        $self->logError;
-    }
-    return $errors ? UNKNOWN_ERROR : $fields->{cfgNum};
+    $self->_dbh->do("COMMIT");
+    $self->_dbh->{AutoCommit} = 1;
+    return $fields->{cfgNum};
 }
 
 sub load {

@@ -4,7 +4,7 @@ use strict;
 use Lemonldap::NG::Common::Conf::Constants;    #inherits
 use Lemonldap::NG::Common::Conf::Serializer;
 
-our $VERSION = '1.2.2';
+our $VERSION = '1.4.0';
 
 sub prereq {
     my $self = shift;
@@ -80,7 +80,6 @@ sub store {
     }
     close FILE;
     umask($mask);
-    $self->unlock;
     return $fields->{cfgNum};
 }
 

@@ -17,7 +17,7 @@ use Net::CIDR::Lite;
 
 #parameter syslog Indicates syslog facility for logging user actions
 
-our $VERSION = '1.3.3';
+our $VERSION = '1.4.0';
 our $_SUPER;
 our @ISA;
 
@@ -272,6 +272,7 @@ a {
     print
       '<center><a href="http://lemonldap-ng.org">LemonLDAP::NG</a></center>';
     print STDERR ( ref($self) || $self ) . " error: $t1, $t2\n";
+    print $cgi->end_html();
     $self->quit();
 }
 
