@@ -20,7 +20,7 @@ use Config::IniFiles;
 #inherits Lemonldap::NG::Common::Conf::SOAP
 #inherits Lemonldap::NG::Common::Conf::LDAP
 
-our $VERSION = '1.4.0';
+our $VERSION = '1.4.1';
 our $msg;
 our $iniObj;
 
@@ -168,6 +168,7 @@ sub getConf {
             if ( ref($r) and $r->{cfgNum} == $args->{cfgNum} ) {
                 $msg .=
                   "Configuration unchanged, get configuration from cache.\n";
+                $args->{noCache} = 1;
             }
             else {
                 $r = $self->getDBConf($args);
@@ -213,6 +214,10 @@ sub getConf {
                 $r->{$_} =~ s/^\$//;
             }
         }
+
+        # Store modified configuration in cache
+        $self->setLocalConf($r)
+          if ( $self->{refLocalStorage} and not( $args->{noCache} ) );
 
         # Return configuration hash
         return $r;

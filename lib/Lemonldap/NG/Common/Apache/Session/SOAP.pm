@@ -8,12 +8,14 @@ package Lemonldap::NG::Common::Apache::Session::SOAP;
 use strict;
 use SOAP::Lite;
 
-our $VERSION = '1.0.0';
+our $VERSION = '1.4.1';
 
 #parameter proxy Url of SOAP service
 #parameter proxyOptions SOAP::Lite options
 #parameter User Username
 #parameter Password Password
+#parameter localStorage Cache module
+#parameter localStorageOptions Cache module options
 
 # Variables shared with SOAP::Transport::HTTP::Client
 our ( $user, $password ) = ( '', '' );
@@ -43,7 +45,7 @@ sub TIEHASH {
         data     => { _session_id => $session_id },
         modified => 0,
     };
-    foreach (qw(proxy proxyOptions ns)) {
+    foreach (qw(proxy proxyOptions ns localStorage localStorageOptions)) {
         $self->{$_} = $args->{$_};
     }
     ( $user, $password ) = ( $args->{User}, $args->{Password} );
@@ -149,9 +151,20 @@ sub _soapCall {
 sub get {
     my $self = shift;
     my $id   = shift;
-    my $r    = $self->_soapCall( "getAttributes", $id );
+
+    # Check cache
+    if ( $self->{localStorage} && $self->cache->get("soap$id") ) {
+        return $self->{data} = $self->cache->get("soap$id");
+    }
+
+    # No cache, use SOAP and set cache
+    my $r = $self->_soapCall( "getAttributes", $id );
     return 0 unless ( $r or $r->{error} );
-    return $self->{data} = $r->{attributes};
+    $self->{data} = $r->{attributes};
+
+    $self->cache->set( "soap$id", $self->{data} ) if $self->{localStorage};
+
+    return $self->{data};
 }
 
 ## @method hashRef newSession()
@@ -159,7 +172,18 @@ sub get {
 # @return User datas (just the session ID)
 sub newSession {
     my $self = shift;
-    return $self->{data} = $self->_soapCall("newSession");
+    $self->{data} = $self->_soapCall("newSession");
+
+    # Set cache
+    if ( $self->{localStorage} ) {
+        my $id = "soap" . $self->{data}->{_session_id};
+        if ( $self->cache->get($id) ) {
+            $self->cache->remove($id);
+        }
+        $self->cache->set( $id, $self->{data} );
+    }
+
+    return $self->{data};
 }
 
 ## @method boolean save()
@@ -167,6 +191,17 @@ sub newSession {
 sub save {
     my $self = shift;
     return unless ( $self->{modified} );
+
+    # Update session in cache
+    if ( $self->{localStorage} ) {
+        my $id = "soap" . $self->{data}->{_session_id};
+        if ( $self->cache->get($id) ) {
+            $self->cache->remove($id);
+        }
+        $self->cache->set( $id, $self->{data} );
+    }
+
+    # SOAP
     return $self->_soapCall( "setAttributes", $self->{data}->{_session_id},
         $self->{data} );
 }
@@ -175,6 +210,16 @@ sub save {
 # Deletes the current session.
 sub delete {
     my $self = shift;
+
+    # Remove session from cache
+    if ( $self->{localStorage} ) {
+        my $id = "soap" . $self->{data}->{_session_id};
+        if ( $self->cache->get($id) ) {
+            $self->cache->remove($id);
+        }
+    }
+
+    # SOAP
     return $self->_soapCall( "deleteSession", $self->{data}->{_session_id} );
 }
 
@@ -203,6 +248,18 @@ sub get_key_from_all_sessions() {
     else {
         return $self->_soapCall( "get_key_from_all_sessions", $args, $data );
     }
+}
+
+sub cache {
+    my $self = shift;
+
+    return $self->{cache} if $self->{cache};
+
+    my $module = $self->{localStorage};
+    eval "use $module;";
+    $self->{cache} = $module->new( $self->{localStorageOptions} );
+
+    return $self->{cache};
 }
 
 1;
@@ -236,6 +293,12 @@ access to Lemonldap::NG Web-SSO sessions via SOAP.
                  # If soapserver is protected by HTTP Basic:
                  User     => 'http-user',
                  Password => 'pass',
+                 # To have a local session cache
+                 localStorage        => "Cache::FileCache",
+                 localStorageOptions => {
+                     'namespace'          => 'lemonldap-ng',
+                     'default_expires_in' => 600,
+                 },
          },
          configStorage       => {
              ... # See Lemonldap::NG::Handler
@@ -253,6 +316,12 @@ access to Lemonldap::NG Web-SSO sessions via SOAP.
                  # If soapserver is protected by HTTP Basic:
                  User     => 'http-user',
                  Password => 'pass',
+                 # To have a local session cache
+                 localStorage        => "Cache::FileCache",
+                 localStorageOptions => {
+                     'namespace'          => 'lemonldap-ng',
+                     'default_expires_in' => 600,
+                 },
          },
          configStorage => {
              ... # See Lemonldap::NG::Portal
@@ -293,18 +362,12 @@ C<>SOAP::Transport::HTTP::Client::get_basic_credentials>:
   use base Lemonldap::NG::Handler::SharedConf;
   
   __PACKAGE__->init ( {
-      localStorage        => "Cache::FileCache",
-      localStorageOptions => {
-                'namespace'          => 'lemonldap-ng',
-                'default_expires_in' => 600,
-      },
-      configStorage       => {
-                type  => 'SOAP',
+      globalStorage => 'Lemonldap::NG::Common::Apache::Session::SOAP',
+      globalStorageOptions => {
                 proxy => 'http://auth.example.com/index.pl/sessions',
                 User     => 'http-user',
                 Password => 'pass',
       },
-      https               => 1,
   } );
 
 =item * SSL Authentication
@@ -321,16 +384,10 @@ set environment variables.
   $ENV{HTTPS_KEY_FILE}  = 'client-key.pem';
   
   __PACKAGE__->init ( {
-      localStorage        => "Cache::FileCache",
-      localStorageOptions => {
-                'namespace'          => 'lemonldap-ng',
-                'default_expires_in' => 600,
+      globalStorage => 'Lemonldap::NG::Common::Apache::Session::SOAP',
+      globalStorageOptions => {
+                proxy => 'https://auth.example.com/index.pl/sessions',
       },
-      configStorage       => {
-                type  => 'SOAP',
-                proxy => 'http://auth.example.com/index.pl/sessions',
-      },
-      https               => 1,
   } );
 
 =back

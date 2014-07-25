@@ -6,7 +6,7 @@
 
 package Lemonldap::NG::Common::Session;
 
-our $VERSION = 1.4.0;
+our $VERSION = 1.4.1;
 
 use Mouse;
 use Lemonldap::NG::Common::Apache::Session;
@@ -56,6 +56,11 @@ has 'cacheModule' => (
 has 'cacheModuleOptions' => (
     is  => 'rw',
     isa => 'HashRef|Undef',
+);
+
+has 'error' => (
+    is  => 'rw',
+    isa => 'Str|Undef',
 );
 
 sub BUILD {
@@ -116,11 +121,24 @@ sub _tie_session {
     my %h;
 
     eval {
-        tie %h, 'Lemonldap::NG::Common::Apache::Session', $self->id,
-          $self->options;
+        # SOAP session module must be directly tied
+        if ( $self->storageModule =~
+            /Lemonldap::NG::Common::Apache::Session::SOAP/ )
+        {
+            tie %h, $self->storageModule, $self->id, $self->options;
+        }
+        else {
+            tie %h, 'Lemonldap::NG::Common::Apache::Session', $self->id,
+              $self->options;
+        }
     };
 
-    return undef if ( $@ or not tied(%h) );
+    if ( $@ or not tied(%h) ) {
+        my $msg = "Session cannot be tied";
+        $msg .= ": $@" if $@;
+        $self->error($msg);
+        return undef;
+    }
 
     return \%h;
 }
@@ -136,7 +154,10 @@ sub update {
     my $self  = shift;
     my $infos = shift;
 
-    return 0 unless ( ref $infos eq "HASH" );
+    unless ( ref $infos eq "HASH" ) {
+        $self->error("You need to provide a HASHREF");
+        return 0;
+    }
 
     my $data = $self->_tie_session;
 
@@ -156,6 +177,7 @@ sub update {
         return 1;
     }
 
+    $self->error("No data found in session");
     return 0;
 }
 
@@ -166,7 +188,11 @@ sub remove {
 
     eval { tied(%$data)->delete(); };
 
-    return 0 if $@;
+    if ($@) {
+        $self->error("Unable to delete session: $@");
+        return 0;
+    }
+
     return 1;
 }
 

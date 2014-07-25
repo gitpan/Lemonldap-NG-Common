@@ -42,4 +42,4 @@ requires:
   Net::CIDR::Lite: 0
   SOAP::Lite: 0
   Storable: 0
-version: v1.4.0
+version: v1.4.1

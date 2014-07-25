@@ -12,6 +12,7 @@ use AutoLoader 'AUTOLOAD';
 use Apache::Session;
 use base qw(Apache::Session);
 use Lemonldap::NG::Common::Apache::Session::Store;
+use Lemonldap::NG::Common::Apache::Session::Lock;
 
 our $VERSION = '1.4.0';
 
@@ -49,6 +50,13 @@ sub populate {
         $self->{args}->{object_store} = $self->{object_store};
         $self->{object_store} =
           Lemonldap::NG::Common::Apache::Session::Store->new($self);
+    }
+
+    # If cache is configured, use our specific lock_manager object module
+    if ( $self->{args}->{localStorage} ) {
+        $self->{args}->{lock_manager} = $self->{lock_manager};
+        $self->{lock_manager} =
+          Lemonldap::NG::Common::Apache::Session::Lock->new($self);
     }
     return $self;
 }

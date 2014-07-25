@@ -8,7 +8,7 @@ package Lemonldap::NG::Common::Conf::Attributes;
 
 use Mouse;
 
-our $VERSION = 1.4.0;
+our $VERSION = 1.4.1;
 
 ## A
 
@@ -577,7 +577,8 @@ has 'mailFrom' => (
     isa     => 'Str',
     default => sub {
         my $self = shift;
-        return "noreply@" . $self->domain;
+        my $domain = $self ? $self->domain : "example.com";
+        return "noreply@" . $domain;
     },
     lazy          => 1,
     documentation => 'Sender email',
@@ -623,7 +624,8 @@ has 'mailUrl' => (
     isa     => 'Str',
     default => sub {
         my $self = shift;
-        return $self->portal . "mail.pl";
+        my $portal = $self ? $self->portal : "http://auth.example.com/";
+        return $portal . "mail.pl";
     },
     lazy          => 1,
     documentation => 'URL of password reset page',
@@ -769,7 +771,7 @@ has 'portal' => (
     documentation => 'Portal URL',
 );
 
-has 'portalAntiframe' => (
+has 'portalAntiFrame' => (
     is            => 'rw',
     isa           => 'Bool',
     default       => '1',
@@ -947,7 +949,8 @@ has 'registerUrl' => (
     isa     => 'Str',
     default => sub {
         my $self = shift;
-        return $self->portal . "register.pl";
+        my $portal = $self ? $self->portal : "http://auth.example.com/";
+        return $portal . "register.pl";
     },
     lazy          => 1,
     documentation => 'URL of register page',
@@ -965,9 +968,10 @@ has 'remoteGlobalStorageOptions' => (
     isa     => 'HashRef',
     default => sub {
         my $self = shift;
+        my $portal = $self ? $self->portal : "http://auth.example.com/";
         return {
-            'proxy' => $self->portal . 'index.pl/sessions',
-            'ns'    => $self->portal . 'Lemonldap/NG/Common/CGI/SOAPService',
+            'proxy' => $portal . 'index.pl/sessions',
+            'ns'    => $portal . 'Lemonldap/NG/Common/CGI/SOAPService',
         };
     },
     lazy          => 1,
@@ -1031,7 +1035,8 @@ has 'samlIdPResolveCookie' => (
     isa     => 'Str',
     default => sub {
         my $self = shift;
-        return $self->cookieName . "idp";
+        my $cookieName = $self ? $self->cookieName : "lemonldap";
+        return $cookieName . "idp";
     },
     lazy          => 1,
     documentation => 'SAML IDP resolution cookie',
@@ -1376,7 +1381,7 @@ has 'slaveExportedVars' => (
 has 'SMTPServer' => (
     is            => 'rw',
     isa           => 'Str',
-    default       => 'localhost',
+    default       => '',
     documentation => 'SMTP Server',
 );
 

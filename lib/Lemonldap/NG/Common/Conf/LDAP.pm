@@ -11,7 +11,7 @@ use Lemonldap::NG::Common::Conf::Constants;    #inherits
 use Lemonldap::NG::Common::Conf::Serializer;
 use Encode;
 
-our $VERSION = '1.4.0';
+our $VERSION = '1.4.1';
 
 BEGIN {
     *Lemonldap::NG::Common::Conf::ldap = \&ldap;
@@ -148,6 +148,8 @@ sub store {
 
     $fields = $self->serialize($fields);
 
+    my $lastCfg = $self->lastCfg;
+
     my $confName = "lmConf-" . $fields->{cfgNum};
     my $confDN   = "cn=$confName," . $self->{ldapConfBase};
 
@@ -158,17 +160,26 @@ sub store {
         push @confValues, "{$k}$v";
     }
 
-    my $add = $self->ldap->add(
-        $confDN,
-        attrs => [
-            objectClass => [ 'top', 'applicationProcess' ],
-            cn          => $confName,
-            description => \@confValues,
-        ]
-    );
+    my $operation;
 
-    if ( $add->code ) {
-        $self->logError($add);
+    if ( $lastCfg == $fields->{cfgNum} ) {
+        $operation =
+          $self->ldap->modify( $confDN,
+            replace => { description => \@confValues } );
+    }
+    else {
+        $operation = $self->ldap->add(
+            $confDN,
+            attrs => [
+                objectClass => [ 'top', 'applicationProcess' ],
+                cn          => $confName,
+                description => \@confValues,
+            ]
+        );
+    }
+
+    if ( $operation->code ) {
+        $self->logError($operation);
         return 0;
     }
 
