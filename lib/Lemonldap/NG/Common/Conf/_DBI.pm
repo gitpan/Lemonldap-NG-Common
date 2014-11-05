@@ -10,8 +10,8 @@ our ( @EXPORT, %EXPORT_TAGS );
 
 BEGIN {
     *Lemonldap::NG::Common::Conf::_dbh = \&_dbh;
-    *EXPORT      = \@Lemonldap::NG::Common::Conf::Constants::EXPORT;
-    *EXPORT_TAGS = \%Lemonldap::NG::Common::Conf::Constants::EXPORT_TAGS;
+    push @EXPORT, @Lemonldap::NG::Common::Conf::Constants::EXPORT;
+    %EXPORT_TAGS = %Lemonldap::NG::Common::Conf::Constants::EXPORT_TAGS;
     push @EXPORT,
       qw(prereq available lastCfg _dbh lock isLocked unlock delete logError);
 }

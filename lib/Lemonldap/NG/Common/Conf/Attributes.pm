@@ -584,13 +584,6 @@ has 'mailFrom' => (
     documentation => 'Sender email',
 );
 
-has 'mailSessionKey' => (
-    is            => 'rw',
-    isa           => 'Str',
-    default       => 'mail',
-    documentation => 'Session parameter where mail is stored',
-);
-
 has 'mailOnPasswordChange' => (
     is            => 'rw',
     isa           => 'Bool',

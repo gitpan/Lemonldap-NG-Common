@@ -154,7 +154,7 @@ sub get_key_from_all_sessions {
         return $backend->get_key_from_all_sessions(@_);
     }
     if ( $backend =~
-        /^Apache::Session::(MySQL|Postgres|Oracle|Sybase|Informix)$/ )
+        /^Apache::Session::(MySQL|MySQL::NoLock|Postgres|Oracle|Sybase|Informix)$/ )
     {
         return $class->_dbiGKFAS( $1, @_ );
     }
